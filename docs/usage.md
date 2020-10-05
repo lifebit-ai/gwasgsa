@@ -2,42 +2,58 @@
 
 ## Table of contents
 
-* [Table of contents](#table-of-contents)
-* [Introduction](#introduction)
-* [Running the pipeline](#running-the-pipeline)
-  * [Updating the pipeline](#updating-the-pipeline)
-  * [Reproducibility](#reproducibility)
-* [Main arguments](#main-arguments)
-  * [`-profile`](#-profile)
-  * [`--reads`](#--reads)
-  * [`--single_end`](#--single_end)
-* [Reference genomes](#reference-genomes)
-  * [`--genome` (using iGenomes)](#--genome-using-igenomes)
-  * [`--fasta`](#--fasta)
-  * [`--igenomes_ignore`](#--igenomes_ignore)
-* [Job resources](#job-resources)
-  * [Automatic resubmission](#automatic-resubmission)
-  * [Custom resource requests](#custom-resource-requests)
-* [AWS Batch specific parameters](#aws-batch-specific-parameters)
-  * [`--awsqueue`](#--awsqueue)
-  * [`--awsregion`](#--awsregion)
-  * [`--awscli`](#--awscli)
-* [Other command line parameters](#other-command-line-parameters)
-  * [`--outdir`](#--outdir)
-  * [`--email`](#--email)
-  * [`--email_on_fail`](#--email_on_fail)
-  * [`--max_multiqc_email_size`](#--max_multiqc_email_size)
-  * [`-name`](#-name)
-  * [`-resume`](#-resume)
-  * [`-c`](#-c)
-  * [`--custom_config_version`](#--custom_config_version)
-  * [`--custom_config_base`](#--custom_config_base)
-  * [`--max_memory`](#--max_memory)
-  * [`--max_time`](#--max_time)
-  * [`--max_cpus`](#--max_cpus)
-  * [`--plaintext_email`](#--plaintext_email)
-  * [`--monochrome_logs`](#--monochrome_logs)
-  * [`--multiqc_config`](#--multiqc_config)
+- [nf-core/gwasgsa: Usage](#nf-coregwasgsa-usage)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Running the pipeline](#running-the-pipeline)
+    - [With VCF files](#with-vcf-files)
+    - [With plink file](#with-plink-file)
+    - [With SummaryStats file from GWAs stiudy](#with-summarystats-file-from-gwas-stiudy)
+    - [Updating the pipeline](#updating-the-pipeline)
+    - [Reproducibility](#reproducibility)
+  - [Main arguments](#main-arguments)
+    - [`-profile`](#-profile)
+  - [Mandatory Params](#mandatory-params)
+    - [With VCF files](#with-vcf-files-1)
+    - [With plink binary files](#with-plink-binary-files)
+    - [With Summary Statistics file](#with-summary-statistics-file)
+  - [Optional params](#optional-params)
+    - [Annotation Settings](#annotation-settings)
+    - [Gene Analysis Settings](#gene-analysis-settings)
+    - [Gene Set Analysis Settings](#gene-set-analysis-settings)
+    - [Gene Property Analysis](#gene-property-analysis)
+    - [Results filtering and Plotting Settings](#results-filtering-and-plotting-settings)
+    - [Others params](#others-params)
+  - [Output Files](#output-files)
+    - [`--reads`](#--reads)
+    - [`--single_end`](#--single_end)
+  - [Reference genomes](#reference-genomes)
+    - [`--genome` (using iGenomes)](#--genome-using-igenomes)
+    - [`--fasta`](#--fasta)
+    - [`--igenomes_ignore`](#--igenomes_ignore)
+  - [Job resources](#job-resources)
+    - [Automatic resubmission](#automatic-resubmission)
+    - [Custom resource requests](#custom-resource-requests)
+  - [AWS Batch specific parameters](#aws-batch-specific-parameters)
+    - [`--awsqueue`](#--awsqueue)
+    - [`--awsregion`](#--awsregion)
+    - [`--awscli`](#--awscli)
+  - [Other command line parameters](#other-command-line-parameters)
+    - [`--outdir`](#--outdir)
+    - [`--email`](#--email)
+    - [`--email_on_fail`](#--email_on_fail)
+    - [`--max_multiqc_email_size`](#--max_multiqc_email_size)
+    - [`-name`](#-name)
+    - [`-resume`](#-resume)
+    - [`-c`](#-c)
+    - [`--custom_config_version`](#--custom_config_version)
+    - [`--custom_config_base`](#--custom_config_base)
+    - [`--max_memory`](#--max_memory)
+    - [`--max_time`](#--max_time)
+    - [`--max_cpus`](#--max_cpus)
+    - [`--plaintext_email`](#--plaintext_email)
+    - [`--monochrome_logs`](#--monochrome_logs)
+    - [`--multiqc_config`](#--multiqc_config)
 
 ## Introduction
 
@@ -53,10 +69,65 @@ NXF_OPTS='-Xms1g -Xmx4g'
 
 ## Running the pipeline
 
+Input can be of two type
+
+* RAW data - VCF files [OR] plink binary files
+* GWAS summary stats file
+
 The typical command for running the pipeline is as follows:
 
+### With VCF files
+
 ```bash
-nextflow run nf-core/gwasgsa --reads '*_R{1,2}.fastq.gz' -profile docker
+nextflow run main.nf -profile test_with_vcf
+```
+
+OR
+
+```bash
+nextflow run main.nf \
+    --vcf_file s3://lifebit-featured-datasets/projects/gel/gel-gwas/testdata/vcfs.csv \
+    --gene_loc_file testdata/NCBI37.3/NCBI37.3.gene.loc \
+    --set_anot_file testdata/c2.cp.reactome.v7.1.entrez.gmt \
+    --outdir results_test_vcf
+```
+
+### With plink file
+
+```bash
+nextflow run main.nf -profile test_with_plink
+```
+OR
+
+```bash
+nextflow run main.nf \
+    --plink_bed testdata/plink_out.bed \
+    --plink_bim testdata/plink_out.bim \
+    --plink_fam testdata/plink_out.fam \
+    --gene_loc_file testdata/NCBI37.3/NCBI37.3.gene.loc \
+    --set_anot_file testdata/c2.cp.reactome.v7.1.entrez.gmt \
+    --outdir results_test_plink
+```
+
+### With SummaryStats file from GWAs stiudy
+
+> Note: Not all the test data comes with source code. It needed to be download individually.
+
+Reference panels can be downloaded from - [MAGMA homepage](https://ctg.cncr.nl/software/magma)
+
+```
+nextflow run main.nf \
+    --summary_stats testdata/saige_results_covid_1.csv \
+    --snp_col_name 'SNPID' \
+    --pval_col_name 'p.value' \
+    --sample_size 151 \
+    --ref_panel_bed g1000_eur/g1000_eur.bed \
+    --ref_panel_bim g1000_eur/g1000_eur.bim \
+    --ref_panel_fam g1000_eur/g1000_eur.fam \
+    --ref_panel_synonyms g1000_eur/g1000_eur.synonyms \
+    --gene_loc_file testdata/NCBI37.3/NCBI37.3.gene.loc \
+    --set_anot_file testdata/c2.cp.reactome.v7.1.entrez.gmt \
+    --outdir results_test_sumstat
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -118,6 +189,115 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
   * Includes links to test data so needs no other parameters
 
 <!-- TODO nf-core: Document required command line parameters -->
+
+## Mandatory Params
+
+| param | description | 
+|-------|-------------|
+| `--gene_loc_file` | Gene-SNP mapped Location file (This can be downloaded from MAGMA homepage) |
+| `--set_anot_file` | A SET file (Ex. A .gmt file, check MSigDB) |
+
+### With VCF files
+
+| param | description | 
+|-------|-------------|
+| `--vcf_file` | A list of VCF in a CSV file ((Optional if `--plink_*` OR `--summary_stats` already provided)) |
+
+### With plink binary files
+
+| param | description | 
+|-------|-------------|
+| `--plink_bim` | Plink .bim file (Optional if `--vcf_file` OR `--summary_stats` already provided) |
+| `--plink_bed` | Plink .bed file (Optional if `--vcf_file` OR `--summary_stats` already provided) |
+| `--plink_fam` | Plink .fam file (Optional if `--vcf_file` OR `--summary_stats` already provided) |
+
+### With Summary Statistics file
+
+| param | description | 
+|-------|-------------|
+| `--summary_stats` | A SummaryStats file from GWAS study (Optional if `--vcf_file` or `--plink_*` already provided) |
+| `--snp_col_name`| Column name from SummaryStats file in which SNP ids present. (Required only if `--summary_stats` provided ) |
+| `--pval_col_name`| Column name from SummaryStats file in which P-values present. (Required only if `--summary_stats` provided ) |
+| `--sample_size` | The sample size [N] of the data the SNP p-values (SummaryStats) were obtained (Required only if `--summary_stats` provided ) |
+| `--ref_panel_bim` | Reference panel bim file (Required only if `--summary_stats` provided ) |
+| `--ref_panel_bed` | Reference panel bed file (Required only if `--summary_stats` provided ) |
+| `--ref_panel_fam` | Reference panel fam file (Required only if `--summary_stats` provided ) |
+| `--ref_panel_synonyms` | Reference panel synonyms file (Required only if `--summary_stats` provided ) |
+
+## Optional params
+
+### Annotation Settings
+
+| param | description | 
+|-------|-------------|
+| `--window` | Two values (in kilobase) with comma separation. This extends the annotation region by the specified number of kilobases in both directions (Default: 0,0) |
+| `--snp_subset` | A .bim file with a subset of SNPs. If provided only these will be filtered during the annotation step and proceed further |
+
+### Gene Analysis Settings
+
+| param | description | 
+|-------|-------------|
+| `--gene_model` | Which model to use during gene p-value calculation [linreg/ snp-wise=mean/snp-wise=top] (Default: snp-wise=mean) Exception: `linger` can't be used with `--summary_stats` |
+| `--snp_min_maf` | Minimum SNP minor allele frequency. (Default: 0) |
+| `--snp_min_mac` | Minimum SNP minor allele count (Default: 0) |
+| `--snp_max_maf` | Maximum SNP minor allele frequency (Default: not applied) |
+| `--snp_max_mac` | Maximum SNP minor allele count (Default: not applied) |
+| `--snp_max_miss` | Maximum allowed SNP missingness (Default: 0.05) |
+| `--snp_diff` | SNP differential missingness test threshold (Default: 1e-6) |
+| `--seed` | Use to set the seed of the random number generator in some gene analysis models (Default: not applied) |
+| `--burden` | Specifying burden score settings for rare variants Exception: can't be used with `--summary_stats`|
+| `--big_data` | Special mode for reducing running time and memory usage when analyzing very large data sets |
+
+### Gene Set Analysis Settings
+
+| param | description | 
+|-------|-------------|
+| `--gene_info` | per-gene information [true/false] (Default: false) |
+| `--outlier_up`, `--outlier_down` | Z-core cutoff for detecting outlier (Default: lower-3 upper-6) | 
+| `--direction_sets` | The direction of testing in the model (Default: 'positive') accepted values for all directions ‘pos’/‘positive’/‘greater’, ‘neg’/‘negative’/‘smaller’ and ‘both’/‘two’/‘twosided’/‘two-sided’ |
+| `--self_contained` | perform an additional self-contained gene-set analysis for all gene sets [true/false] (Default: false) |
+| `--alpha` | sets the significance level. Takes numeric value (Default: Not applied) |
+| `--correct` | Control the automatic correction for technical data-level properties [all/none] (Default: all) | 
+
+### Gene Property Analysis
+
+| param | description | 
+|-------|-------------|
+| `--cov_file` | Provide a covariate file Exception: can't be used with `--summary_stats` | 
+
+### Results filtering and Plotting Settings
+
+| param | description | 
+|-------|-------------|
+| `--pvalue_cutoff` | P value to be applied on GeneSet while plotting. (Default: 0.05) |
+| `--top_n_value` | Number of top significant to keep from GeneSet while plotting. (Default: 10) |
+
+### Others params
+
+| param | description | 
+|-------|-------------|
+| `--outdir` | Output directory name (Default: Results in current directory) |
+| `--help` | Show help menu | 
+| `-resume` | Nextflow param, help in resume a run |
+
+## Output Files
+
+| file name | description | 
+|-------|-------------|
+| **magma_out.genes.annot** | This file contains the SNP to gene annotation mapping information. |
+| **magma_out.genes.annot.log** | Log from the annotation run step. |
+| **magma_out.genes.out** | (Human Readable) Individual genes calculated p-value from gene analysis step. |
+| **magma_out.genes.raw** | (Machine Readable) Individual genes calculated p-value from gene analysis step. |
+| **magma_out.genes.out.log** | Log from the gene analysis step. |
+| **magma_out.gsa.out** | Final Result of Gene-Set-Analysis. Contains information about Gene-Set and their corresponding p-value. |
+| **magma_out.gsa.out.log** | Log from the Gene-Set-Analysis step. |
+| **magma_out.gsa.out.sorted.csv** | Same information as **magma_out.gsa.out**, but sorted based on p-value and in comma separated format. |
+| **magma_out.gsa.out.sorted.genename.tsv** | With additional column of Gene Names |
+| **magma_out.gsa.out.top_10.plot.csv** | Top N number of Gene-Set after sorted based on p-value. This can be treated as significant Gene-Sets from the analysis. |
+| **magma_out.gsa.out.top_10.plot.genename.tsv**| With additional column of Gene Names |
+| **magma_out.gsa.out.top_10.plot.plot** | A dotdot representing significant Gene-Sets. |
+
+<!-- TODO nf-core: clean bellow -->
 
 ### `--reads`
 

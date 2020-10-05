@@ -94,29 +94,82 @@ ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: t
 ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 
-/*
- * Create a channel for input read files
- */
-if (params.readPaths) {
-    if (params.single_end) {
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [ file(row[1][0], checkIfExists: true) ] ] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { ch_read_files_fastqc; ch_read_files_trimming }
-    } else {
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [ file(row[1][0], checkIfExists: true), file(row[1][1], checkIfExists: true) ] ] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { ch_read_files_fastqc; ch_read_files_trimming }
-    }
+if (params.vcf_file) {
+    Channel.fromPath(params.vcf_file)
+           .ifEmpty { exit 1, "VCF file containing  not found: ${params.vcf_file}" }
+           .into { vcf_file; vcfs_to_split }
+    vcfs_to_split
+        .splitCsv(header: true)
+        .map{ row -> [file(row.vcf)] }
+        .set { vcfs }
 } else {
-    Channel
-        .fromFilePairs(params.reads, size: params.single_end ? 1 : 2)
-        .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --single_end on the command line." }
-        .into { ch_read_files_fastqc; ch_read_files_trimming }
+    vcfs = false
+    vcf_file = false
 }
+
+//--------------------------------------------------------------------------
+
+if (!params.gene_loc_file){
+    exit 1, "Provide mandatory argument '--gene_loc_file'"
+} else {
+    Channel.fromPath(params.gene_loc_file)
+        .into { gene_loc_file_ch; gene_loc_file_ch_2 }
+}
+
+if (!params.set_anot_file) {
+    exit 1, "Provide mandatory argument '--set_anot_file'"
+} else {
+    Channel.fromPath(params.set_anot_file)
+        .into { set_anot_ch; set_anot_ch_2 }
+}
+
+if (params.cov_file) {
+    Channel.fromPath(params.cov_file)
+        .set { cov_ch }
+} else cov_ch=''
+
+//--------------------------------------------------------------------------
+
+if (params.plink_bed) {
+    Channel.fromPath(params.plink_bed)
+        .ifEmpty { exit 1, "PLINK binary pedigree file not found: ${params.bed}" }
+        .set { bed_ch }
+} else bed_ch=''
+if (params.plink_bim) {
+    Channel.fromPath(params.plink_bim)
+        .ifEmpty { exit 1, "PLINK BIM file not found: ${params.bim}" }
+        .set { bim_ch }
+} else bim_ch=''
+if (params.plink_fam) {
+    Channel.fromPath(params.plink_fam)
+        .ifEmpty { exit 1, "PLINK FAM file not found: ${params.fam}" }
+        .set { fam_ch }
+} else fam_ch=''
+
+//--------------------------------------------------------------------------
+
+if (params.ref_panel_bed) {
+    Channel.fromPath(params.ref_panel_bed)
+        .ifEmpty { exit 1, "File not found: ${params.ref_panel_bed}" }
+        .set { ref_panel_bed_ch }
+} else ref_panel_bed_ch=''
+if (params.ref_panel_bim) {
+    Channel.fromPath(params.ref_panel_bim)
+        .ifEmpty { exit 1, "File not found: ${params.ref_panel_bim}" }
+        .set { ref_panel_bim_ch }
+} else ref_panel_bim_ch=''
+if (params.ref_panel_fam) {
+    Channel.fromPath(params.ref_panel_fam)
+        .ifEmpty { exit 1, "File not found: ${params.ref_panel_fam}" }
+        .set { ref_panel_fam_ch }
+} else ref_panel_fam_ch=''
+if (params.ref_panel_synonyms) {
+    Channel.fromPath(params.ref_panel_synonyms)
+        .ifEmpty { exit 1, "File not found: ${params.ref_panel_synonyms}" }
+        .set { ref_panel_synonyms_ch }
+} else ref_panel_synonyms_ch = Channel.from(1)
+
+//--------------------------------------------------------------------------
 
 // Header log info
 log.info nfcoreHeader()
@@ -196,74 +249,407 @@ process get_software_versions {
 }
 
 /*
- * STEP 1 - FastQC
+ * Main process starts here
  */
-process fastqc {
-    tag "$name"
-    label 'process_medium'
-    publishDir "${params.outdir}/fastqc", mode: 'copy',
-        saveAs: { filename ->
-                      filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"
-                }
+
+process file_preprocessing {
+    publishDir "${params.outdir}/processed_files", mode: 'copy'
+    container 'lifebitai/preprocess_gwas:latest'
 
     input:
-    set val(name), file(reads) from ch_read_files_fastqc
+    file vcfs from vcfs.collect()
+    file vcf_file from vcf_file
 
     output:
-    file "*_fastqc.{zip,html}" into ch_fastqc_results
+    file 'merged.vcf' into vcf_plink
+    file 'sample.phe' into data
+
+    when: params.vcf_file
 
     script:
     """
-    fastqc --quiet --threads $task.cpus $reads
+    # iterate through urls in csv replacing s3 path with the local one
+    urls="\$(tail -n+2 $vcf_file | awk -F',' '{print \$2}')"
+    for url in \$(echo \$urls); do
+        vcf="\${url##*/}"
+        sed -i -e "s~\$url~\$vcf~g" $vcf_file
+    done
+    # bgzip uncompressed vcfs
+    for vcf in \$(tail -n+2 $vcf_file | awk -F',' '{print \$2}'); do
+        if [ \${vcf: -4} == ".vcf" ]; then
+                bgzip -c \$vcf > \${vcf}.gz
+                sed -i "s/\$vcf/\${vcf}.gz/g" $vcf_file 
+        fi
+    done
+    # remove any prexisting columns for sex 
+    if grep -Fq "SEX" $vcf_file; then
+        awk -F, -v OFS=, 'NR==1{for (i=1;i<=NF;i++)if (\$i=="SEX"){n=i-1;m=NF-(i==NF)}} {for(i=1;i<=NF;i+=1+(i==n))printf "%s%s",\$i,i==m?ORS:OFS}' $vcf_file > tmp.csv && mv tmp.csv $vcf_file
+    fi
+    # determine sex of each individual from VCF file & add to csv file
+    echo 'SEX' > sex.txt
+    for vcf in \$(tail -n+2 $vcf_file | awk -F',' '{print \$2}'); do
+        bcftools index -f \$vcf
+        SEX="\$(bcftools plugin vcf2sex \$vcf)"
+        if [[ \$SEX == *M ]]; then
+                echo "1" >> sex.txt
+        elif [ \$SEX == *F ]]; then
+                echo "2" >> sex.txt
+        fi
+    done
+    # make fam file & merge vcfs
+    paste -d, sex.txt $vcf_file > tmp.csv && mv tmp.csv $vcf_file
+    make_fam2.py $vcf_file
+    vcfs=\$(tail -n+2 $vcf_file | awk -F',' '{print \$3}')
+    bcftools merge --force-samples \$vcfs > merged.vcf
+    """
+}
+
+// run plink on given vcf files
+process plink {
+    publishDir "${params.outdir}/plink", mode: 'copy'
+    container 'alliecreason/plink:1.90'
+
+    input:
+    file vcf from vcf_plink
+    file fam from data
+
+    output:
+    set file('*.bed'), file('*.bim'), file('*.fam') into plink_undirect, plink_undirect_2
+
+    when: params.vcf_file
+
+    script:
+    """
+    sed '1d' $fam > tmpfile; mv tmpfile $fam
+    # remove contigs eg GL000229.1 to prevent errors
+    sed -i '/^GL/ d' $vcf
+    plink --vcf $vcf --make-bed
+    rm plink.fam
+    mv $fam plink.fam
+    """
+}
+
+// this process is just for meaintain a proper channel by diverting reference panel to plink
+process preprocess_plink {
+
+    input:
+    file bed from bed_ch
+    file bim from bim_ch
+    file fam from fam_ch
+
+    output:
+    set file("${bed}"), file("${bim}"), file("${fam}") into plink_direct, plink_direct_2
+
+    when: params.plink_bed && params.plink_bim && params.plink_fam
+
+    script:
+    """
+    echo "No Change"
+    """
+}
+
+// this is only incase of summary stats file provided
+
+if (params.summary_stats){
+    Channel.fromPath(params.summary_stats)
+        .set { summary_stats_ch }
+} else summary_stats_ch = ''
+
+process process_summary_stats {
+    container 'lifebitai/gwasgsa:latest'
+
+    input:
+    file summary_stats from summary_stats_ch
+
+    output:
+    file('snp_p.txt') into snp_p_txt_ch
+
+    when: params.summary_stats
+
+    script:
+    """
+    csvtk cut -t -f ${params.snp_col_name},${params.pval_col_name} \
+        ${summary_stats} > temp_1.txt
+    awk '{gsub("${params.snp_col_name}", "SNP", \$0); print}' temp_1.txt > temp_2.txt
+    awk '{gsub("${params.pval_col_name}", "P", \$0); print}' temp_2.txt > snp_p.txt
+    """
+}
+
+// this process is just for meaintain a proper channel by diverting reference panel to plink 
+process preprocess_ref_panel {
+
+    input:
+    file bed from ref_panel_bed_ch
+    file bim from ref_panel_bim_ch
+    file fam from ref_panel_fam_ch
+
+    output:
+    set file("${bed}"), file("${bim}"), file("${fam}") into plink_ref_panel, plink_ref_panel_2
+
+    when: !params.plink_bed && !params.plink_bim && !params.plink_fam && params.ref_panel_bed && params.ref_panel_bim && params.ref_panel_fam
+
+    script:
+    """
+    echo "No Change"
+    """
+}
+
+// optional params for annotation step
+if (params.plink_bed && params.plink_bim && params.plink_fam){
+    plink_ch = plink_direct
+    plink_ch_2 = plink_direct_2
+} else if(params.ref_panel_bed && params.ref_panel_bim && params.ref_panel_fam){
+    plink_ch = plink_ref_panel
+    plink_ch_2 = plink_ref_panel_2
+} else{
+    plink_ch = plink_undirect
+    plink_ch_2 = plink_undirect_2
+}
+annotate_filter=''
+snp_subset_ch=''
+
+if (params.snp_subset) {
+    Channel.fromPath(params.snp_subset)
+        .ifEmpty { exit 1, "A .bim file not found: ${params.snp_subset}" }
+        .set { snp_subset_ch }
+    annotate_filter='filter=snpsubset.bim'
+}
+
+process magma_annotation {
+    publishDir "${params.outdir}/magma", mode: 'copy'
+    container 'lifebitai/gwasgsa:latest'
+
+    input:
+    set file(bed), file(bim), file(fam) from plink_ch
+    file(gene_loc_file) from gene_loc_file_ch
+    file(snp_subset_file) from snp_subset_ch
+
+    output:
+    set file('magma_out.genes.annot') into magma_anot_ch, magma_anot_ch_2
+    file('magma_out.genes.annot.log') into magma_anot_log_ch
+
+    script:
+    """
+    mv $snp_subset_file snpsubset.bim
+    magma --annotate \
+        window=${params.window} ${annotate_filter} \
+        --snp-loc ${bim} \
+        --gene-loc ${gene_loc_file} \
+        --out magma_out
+    mv magma_out.log magma_out.genes.annot.log
+    """
+}
+
+// optional params for gene analysis
+if (params.summary_stats){
+    pval = "--pval snp_p.txt N=" + params.sample_size
+} else pval=''
+if(params.seed) seed = "--seed " + params.seed else seed=''
+if(params.snp_max_maf) snp_max_maf = "snp-max-maf=" + params.snp_max_maf else snp_max_maf=''
+if(params.snp_max_mac) snp_max_mac = "snp-max-mac=" + params.snp_max_mac else snp_max_mac=''
+if(params.burden) burden = "--burden " + params.burden else burden = ''
+if(params.big_data) big_data = "--big-data" + params.big_data else big_data=''
+if(params.gene_model) gene_model = "--gene-model " + params.gene_model else gene_model=''
+
+// exceptions with summary stats file
+if (params.summary_stats){
+    if(params.gene_model == "linreg") println "Workflow Error: '--gene_model linreg' can't be used with summary stats file" exit 0
+}
+
+// create an dummy channel for snp_ch if summary_stats not provided
+if(params.summary_stats){
+    snp_p_ch = snp_p_txt_ch
+} else {
+    snp_p_ch = Channel.from(1)
+}
+
+process magma_gene_analysis {
+    publishDir "${params.outdir}/magma", mode: 'copy'
+    container 'lifebitai/gwasgsa:latest'
+
+    input:
+    set file(bed), file(bim), file(fam) from plink_ch_2
+    file(magma_anot) from magma_anot_ch
+    file(snp_p_file) from snp_p_ch
+    file(ref_panel_synonyms) from ref_panel_synonyms_ch
+
+    output:
+    file('magma_out.genes.raw') into genes_raw_ch
+    file('magma_out.genes.raw') into genes_raw_ch_2
+    file('magma_out.genes.out') into genes_out_ch
+    file('magma_out.genes.out.log') into  genes_out_log_ch
+
+    script:
+    """
+    # change the names. It should be equal for all (for the purpose of upload timestamp)
+    mv ${bed} plink_file.bed
+    mv ${bim} plink_file.bim
+    mv ${fam} plink_file.fam
+
+    #magma --bfile ${bed.baseName}
+
+    magma --bfile plink_file \
+        ${pval} \
+        --gene-settings \
+        snp-min-maf=${params.snp_min_maf} \
+        ${snp_max_maf} \
+        snp-min-mac=${params.snp_min_mac} \
+        ${snp_max_mac} \
+        snp-max-miss=${params.snp_max_miss} \
+        snp-diff=${params.snp_diff} \
+        ${seed} \
+        ${burden} \
+        ${big_data} \
+        ${gene_model} \
+        --gene-annot ${magma_anot} \
+        --out magma_out
+    mv magma_out.log magma_out.genes.out.log
+    """
+}
+
+// additional geneset settings (optional)
+if(params.gene_info) gene_info = "gene-info" else gene_info = ''
+if(params.self_contained) self_contained = "self-contained" else self_contained = ''
+if(params.alpha) alpha = "alpha=" + params.alpha else alpha=''
+
+process magma_geneset_analysis {
+    publishDir "${params.outdir}/magma", mode: 'copy'
+    container 'lifebitai/gwasgsa:latest'
+
+    input:
+    file(gene_raw) from genes_raw_ch
+    file(set_anot) from set_anot_ch
+
+    output:
+    file('magma_out.gsa.out') into geneset_ch
+    file('*.out') // for gsa.genes.out and .gsa.self.out
+    file('magma_out.gsa.out.log') into geneset_log_ch
+
+    script:
+    """
+    magma --gene-results ${gene_raw} \
+        --settings outlier=${params.outlier_up},${params.outlier_down} \
+        ${gene_info} \
+        --model direction-sets=${params.direction_sets} \
+        ${self_contained} ${alpha} \
+        correct=${params.correct} \
+        --set-annot ${set_anot} \
+        --out magma_out
+    mv magma_out.log magma_out.gsa.out.log
+    """
+}
+
+
+process magma_gene_property_analysis {
+    publishDir "${params.outdir}/magma", mode: 'copy'
+    container 'lifebitai/gwasgsa:latest'
+
+    input:
+    file(gene_raw) from genes_raw_ch_2
+    file(cov) from cov_ch
+
+    output:
+    file('magma_out.gsa.out.cov') into genecov_ch
+    file('magma_out.gsa.out.cov.log') into genecov_log_ch
+
+    when: params.cov_file
+
+    script:
+    """
+    magma --gene-results ${gene_raw} \
+        --gene-covar ${cov} \
+        --out magma_out
+    mv magma_out.gsa.out magma_out.gsa.out.cov
+    mv magma_out.log magma_out.gsa.out.cov.log
+    """
+}
+
+process results_plots {
+    publishDir "${params.outdir}/magma", mode: 'copy'
+    container 'rocker/tidyverse:latest'
+
+    input:
+    file(geneset) from geneset_ch
+
+    output:
+    file('*.png')
+    file('*.sorted.csv') into res_sorted_ch
+    file('*.plot.csv') into res_top_ch
+
+    script:
+    """
+    Rscript $baseDir/bin/dot_plot.R ${geneset} ${params.pvalue_cutoff} ${params.top_n_value}
+    """
+
+}
+
+process get_genenames {
+    publishDir "${params.outdir}/magma", mode: 'copy'
+    container 'rocker/tidyverse:latest'
+
+    input:
+    file(res_sorted) from res_sorted_ch
+    file(res_top) from res_top_ch
+    file(anot) from magma_anot_ch_2
+    file(geneset) from set_anot_ch_2
+    file(geneloc) from gene_loc_file_ch_2
+
+    output:
+    file('*.tsv')
+
+    script:
+    """
+    Rscript $baseDir/bin/gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
+    Rscript $baseDir/bin/gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
     """
 }
 
 /*
- * STEP 2 - MultiQC
+ * MultiQC
  */
-process multiqc {
-    publishDir "${params.outdir}/MultiQC", mode: 'copy'
+// process multiqc {
+//     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
-    input:
-    file (multiqc_config) from ch_multiqc_config
-    file (mqc_custom_config) from ch_multiqc_custom_config.collect().ifEmpty([])
-    // TODO nf-core: Add in log files from your new processes for MultiQC to find!
-    file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
-    file ('software_versions/*') from ch_software_versions_yaml.collect()
-    file workflow_summary from ch_workflow_summary.collectFile(name: "workflow_summary_mqc.yaml")
+//     input:
+//     file (multiqc_config) from ch_multiqc_config
+//     file (mqc_custom_config) from ch_multiqc_custom_config.collect().ifEmpty([])
+//     // TODO nf-core: Add in log files from your new processes for MultiQC to find!
+//     file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
+//     file ('software_versions/*') from ch_software_versions_yaml.collect()
+//     file workflow_summary from ch_workflow_summary.collectFile(name: "workflow_summary_mqc.yaml")
 
-    output:
-    file "*multiqc_report.html" into ch_multiqc_report
-    file "*_data"
-    file "multiqc_plots"
+//     output:
+//     file "*multiqc_report.html" into ch_multiqc_report
+//     file "*_data"
+//     file "multiqc_plots"
 
-    script:
-    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
-    // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
-    """
-    multiqc -f $rtitle $rfilename $custom_config_file .
-    """
-}
+//     script:
+//     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+//     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+//     custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
+//     // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
+//     """
+//     multiqc -f $rtitle $rfilename $custom_config_file .
+//     """
+// }
 
 /*
  * STEP 3 - Output Description HTML
  */
-process output_documentation {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
+// process output_documentation {
+//     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
 
-    input:
-    file output_docs from ch_output_docs
+//     input:
+//     file output_docs from ch_output_docs
 
-    output:
-    file "results_description.html"
+//     output:
+//     file "results_description.html"
 
-    script:
-    """
-    markdown_to_html.py $output_docs -o results_description.html
-    """
-}
+//     script:
+//     """
+//     markdown_to_html.py $output_docs -o results_description.html
+//     """
+// }
 
 /*
  * Completion e-mail notification
