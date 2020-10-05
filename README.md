@@ -32,7 +32,13 @@ iv. Start running your own analysis!
 <!-- TODO nf-core: Update the default command above used to run the pipeline -->
 
 ```bash
-nextflow run nf-core/gwasgsa -profile <docker/singularity/conda/institute> --reads '*_R{1,2}.fastq.gz' --genome GRCh37
+
+nextflow run nf-core/gwasgsa \
+    -profile <docker/singularity/conda/institute> \
+    --vcf_file s3://lifebit-featured-datasets/projects/gel/gel-gwas/testdata/vcfs.csv \
+    --gene_loc_file testdata/NCBI37.3/NCBI37.3.gene.loc \
+    --set_anot_file testdata/c2.cp.reactome.v7.1.entrez.gmt \
+    --outdir results_test_vcf
 ```
 
 See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
@@ -50,7 +56,9 @@ The nf-core/gwasgsa pipeline comes with documentation about the pipeline, found 
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](https://nf-co.re/usage/troubleshooting)
 
-<!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
+## Overview
+
+This pipeline helps to do generalized gene-set analysis of GWAS data using MAGMA. It can be used to analyse both raw genotype data as well as summary SNP p-values from a previous GWAS or meta-analysis.
 
 ## Credits
 
