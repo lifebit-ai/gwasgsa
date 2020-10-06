@@ -1,11 +1,10 @@
-# continuumio/miniconda3:4.8.2
-FROM continuumio/miniconda3@sha256:456e3196bf3ffb13fee7c9216db4b18b5e6f4d37090b31df3e0309926e98cfe2
+FROM nfcore/base:1.10.2
 LABEL authors="Sangram Keshari Sahu" \
       description="Docker image containing all software requirements for the nf-core/gwasgsa pipeline"
 
 # Install the conda environment
 COPY environment.yml /
-RUN conda env create -f /environment.yml && conda clean -a
+RUN conda env create --quiet -f /environment.yml && conda clean -a
 
 # Add conda installation dir to PATH (instead of doing 'conda activate')
 ENV PATH /opt/conda/envs/nf-core-gwasgsa-1.0dev/bin:$PATH
