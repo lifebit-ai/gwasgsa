@@ -71,8 +71,8 @@ NXF_OPTS='-Xms1g -Xmx4g'
 
 Input can be of two type
 
-* RAW data - VCF files [OR] plink binary files
-* GWAS summary stats file
+- RAW data - VCF files [OR] plink binary files
+- GWAS summary stats file
 
 The typical command for running the pipeline is as follows:
 
@@ -97,6 +97,7 @@ nextflow run main.nf \
 ```bash
 nextflow run main.nf -profile test_with_plink
 ```
+
 OR
 
 ```bash
@@ -115,7 +116,7 @@ nextflow run main.nf \
 
 Reference panels can be downloaded from - [MAGMA homepage](https://ctg.cncr.nl/software/magma)
 
-```
+```bash
 nextflow run main.nf \
     --summary_stats testdata/saige_results_covid_1.csv \
     --snp_col_name 'SNPID' \
@@ -174,19 +175,19 @@ They are loaded in sequence, so later profiles can overwrite earlier profiles.
 
 If `-profile` is not specified, the pipeline will run locally and expect all software to be installed and available on the `PATH`. This is _not_ recommended.
 
-* `docker`
-  * A generic configuration profile to be used with [Docker](http://docker.com/)
-  * Pulls software from dockerhub: [`nfcore/gwasgsa`](http://hub.docker.com/r/nfcore/gwasgsa/)
-* `singularity`
-  * A generic configuration profile to be used with [Singularity](http://singularity.lbl.gov/)
-  * Pulls software from DockerHub: [`nfcore/gwasgsa`](http://hub.docker.com/r/nfcore/gwasgsa/)
-* `conda`
-  * Please only use Conda as a last resort i.e. when it's not possible to run the pipeline with Docker or Singularity.
-  * A generic configuration profile to be used with [Conda](https://conda.io/docs/)
-  * Pulls most software from [Bioconda](https://bioconda.github.io/)
-* `test`
-  * A profile with a complete configuration for automated testing
-  * Includes links to test data so needs no other parameters
+- `docker`
+  - A generic configuration profile to be used with [Docker](http://docker.com/)
+  - Pulls software from dockerhub: [`nfcore/gwasgsa`](http://hub.docker.com/r/nfcore/gwasgsa/)
+- `singularity`
+  - A generic configuration profile to be used with [Singularity](http://singularity.lbl.gov/)
+  - Pulls software from DockerHub: [`nfcore/gwasgsa`](http://hub.docker.com/r/nfcore/gwasgsa/)
+- `conda`
+  - Please only use Conda as a last resort i.e. when it's not possible to run the pipeline with Docker or Singularity.
+  - A generic configuration profile to be used with [Conda](https://conda.io/docs/)
+  - Pulls most software from [Bioconda](https://bioconda.github.io/)
+- `test`
+  - A profile with a complete configuration for automated testing
+  - Includes links to test data so needs no other parameters
 
 <!-- TODO nf-core: Document required command line parameters -->
 
