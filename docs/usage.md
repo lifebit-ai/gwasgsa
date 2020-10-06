@@ -110,7 +110,7 @@ nextflow run main.nf \
     --outdir results_test_plink
 ```
 
-### With SummaryStats file from GWAs stiudy
+### With Summary Stats file from GWAs study
 
 > Note: Not all the test data comes with source code. It needed to be download individually.
 
@@ -191,22 +191,24 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 <!-- TODO nf-core: Document required command line parameters -->
 
-## Mandatory Params
+## Pipeline arguments/Parameters
 
-| param | description | 
+### Mandatory Params
+
+| param | description |
 |-------|-------------|
 | `--gene_loc_file` | Gene-SNP mapped Location file (This can be downloaded from MAGMA homepage) |
 | `--set_anot_file` | A SET file (Ex. A .gmt file, check MSigDB) |
 
 ### With VCF files
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--vcf_file` | A list of VCF in a CSV file ((Optional if `--plink_*` OR `--summary_stats` already provided)) |
 
 ### With plink binary files
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--plink_bim` | Plink .bim file (Optional if `--vcf_file` OR `--summary_stats` already provided) |
 | `--plink_bed` | Plink .bed file (Optional if `--vcf_file` OR `--summary_stats` already provided) |
@@ -214,7 +216,7 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 ### With Summary Statistics file
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--summary_stats` | A SummaryStats file from GWAS study (Optional if `--vcf_file` or `--plink_*` already provided) |
 | `--snp_col_name`| Column name from SummaryStats file in which SNP ids present. (Required only if `--summary_stats` provided ) |
@@ -229,14 +231,14 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 ### Annotation Settings
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--window` | Two values (in kilobase) with comma separation. This extends the annotation region by the specified number of kilobases in both directions (Default: 0,0) |
 | `--snp_subset` | A .bim file with a subset of SNPs. If provided only these will be filtered during the annotation step and proceed further |
 
 ### Gene Analysis Settings
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--gene_model` | Which model to use during gene p-value calculation [linreg/ snp-wise=mean/snp-wise=top] (Default: snp-wise=mean) Exception: `linger` can't be used with `--summary_stats` |
 | `--snp_min_maf` | Minimum SNP minor allele frequency. (Default: 0) |
@@ -251,7 +253,7 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 ### Gene Set Analysis Settings
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--gene_info` | per-gene information [true/false] (Default: false) |
 | `--outlier_up`, `--outlier_down` | Z-core cutoff for detecting outlier (Default: lower-3 upper-6) | 
@@ -262,20 +264,20 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 ### Gene Property Analysis
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--cov_file` | Provide a covariate file Exception: can't be used with `--summary_stats` | 
 
 ### Results filtering and Plotting Settings
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--pvalue_cutoff` | P value to be applied on GeneSet while plotting. (Default: 0.05) |
 | `--top_n_value` | Number of top significant to keep from GeneSet while plotting. (Default: 10) |
 
 ### Others params
 
-| param | description | 
+| param | description |
 |-------|-------------|
 | `--outdir` | Output directory name (Default: Results in current directory) |
 | `--help` | Show help menu | 
@@ -283,7 +285,7 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 ## Output Files
 
-| file name | description | 
+| file name | description |
 |-------|-------------|
 | **magma_out.genes.annot** | This file contains the SNP to gene annotation mapping information. |
 | **magma_out.genes.annot.log** | Log from the annotation run step. |
@@ -299,84 +301,6 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 | **magma_out.gsa.out.top_10.plot.plot** | A dotdot representing significant Gene-Sets. |
 
 <!-- TODO nf-core: clean bellow -->
-
-### `--reads`
-
-Use this to specify the location of your input FastQ files. For example:
-
-```bash
---reads 'path/to/data/sample_*_{1,2}.fastq'
-```
-
-Please note the following requirements:
-
-1. The path must be enclosed in quotes
-2. The path must have at least one `*` wildcard character
-3. When using the pipeline with paired end data, the path must use `{1,2}` notation to specify read pairs.
-
-If left unspecified, a default pattern is used: `data/*{1,2}.fastq.gz`
-
-### `--single_end`
-
-By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--single_end` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
-
-```bash
---single_end --reads '*.fastq'
-```
-
-It is not possible to run a mixture of single-end and paired-end files in one run.
-
-## Reference genomes
-
-The pipeline config files come bundled with paths to the illumina iGenomes reference index files. If running with docker or AWS, the configuration is set up to use the [AWS-iGenomes](https://ewels.github.io/AWS-iGenomes/) resource.
-
-### `--genome` (using iGenomes)
-
-There are 31 different species supported in the iGenomes references. To run the pipeline, you must specify which to use with the `--genome` flag.
-
-You can find the keys to specify the genomes in the [iGenomes config file](../conf/igenomes.config). Common genomes that are supported are:
-
-* Human
-  * `--genome GRCh37`
-* Mouse
-  * `--genome GRCm38`
-* _Drosophila_
-  * `--genome BDGP6`
-* _S. cerevisiae_
-  * `--genome 'R64-1-1'`
-
-> There are numerous others - check the config file for more.
-
-Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
-
-The syntax for this reference configuration is as follows:
-
-<!-- TODO nf-core: Update reference genome example according to what is needed -->
-
-```nextflow
-params {
-  genomes {
-    'GRCh37' {
-      fasta   = '<path to the genome fasta file>' // Used if no star index given
-    }
-    // Any number of additional genomes, key is used with --genome
-  }
-}
-```
-
-<!-- TODO nf-core: Describe reference path flags -->
-
-### `--fasta`
-
-If you prefer, you can specify the full path to your reference genome when you run the pipeline:
-
-```bash
---fasta '[path to Fasta reference]'
-```
-
-### `--igenomes_ignore`
-
-Do not load `igenomes.config` when running the pipeline. You may choose this option if you observe clashes between custom parameters and those supplied in `igenomes.config`.
 
 ## Job resources
 
