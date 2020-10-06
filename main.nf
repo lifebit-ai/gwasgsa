@@ -421,7 +421,7 @@ process magma_annotation {
     file(snp_subset_file) from snp_subset_ch
 
     output:
-    file('magma_out.genes.annot') into magma_anot_ch
+    file('magma_out.genes.annot') into (magma_anot_ch, magma_anot_ch_2)
     file('magma_out.genes.annot.log') into magma_anot_log_ch
 
     script:
@@ -575,25 +575,25 @@ process results_plots {
 
 }
 
-// process get_genenames {
-//     publishDir "${params.outdir}/magma", mode: 'copy'
+process get_genenames {
+    publishDir "${params.outdir}/magma", mode: 'copy'
     
-//     input:
-//     file(res_sorted) from res_sorted_ch
-//     file(res_top) from res_top_ch
-//     file(anot) from magma_anot_ch_2
-//     file(geneset) from set_anot_ch_2
-//     file(geneloc) from gene_loc_file_ch_2
+    input:
+    file(res_sorted) from res_sorted_ch
+    file(res_top) from res_top_ch
+    file(anot) from magma_anot_ch_2
+    file(geneset) from set_anot_ch_2
+    file(geneloc) from gene_loc_file_ch_2
 
-//     output:
-//     file('*.tsv')
+    output:
+    file('*.tsv')
 
-//     script:
-//     """
-//     Rscript $baseDir/bin/gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
-//     Rscript $baseDir/bin/gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
-//     """
-// }
+    script:
+    """
+    Rscript $baseDir/bin/gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
+    Rscript $baseDir/bin/gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
+    """
+}
 
 /*
  * MultiQC
