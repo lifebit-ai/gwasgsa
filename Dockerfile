@@ -22,3 +22,8 @@ RUN apt-get update \
     && wget https://github.com/shenwei356/csvtk/releases/download/v0.20.0/csvtk_linux_386.tar.gz \ 
     && tar -zxvf csvtk_linux_386.tar.gz \
     && cp csvtk /usr/bin/
+
+# Copy additonal scripts
+RUN mkdir /opt/bin
+COPY bin/* /opt/bin/
+ENV PATH="$PATH:/opt/bin/"

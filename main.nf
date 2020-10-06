@@ -570,9 +570,8 @@ process results_plots {
 
     script:
     """
-    Rscript $baseDir/bin/dot_plot.R ${geneset} ${params.pvalue_cutoff} ${params.top_n_value}
+    Rscript /opt/bin/dot_plot.R ${geneset} ${params.pvalue_cutoff} ${params.top_n_value}
     """
-
 }
 
 process get_genenames {

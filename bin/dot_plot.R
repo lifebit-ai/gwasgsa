@@ -4,8 +4,8 @@
 # Input - MAGMA tools .gsa.out file
 # Usage - Rscript dot_plot .gsa.out_file pvalue_cutoff top_n_value 
 
-library(ggplot2)
 library(dplyr)
+library(ggplot2)
 
 #gsa_file <- "results_test_vcf/magma/magma_out.gsa.out"
 #pvalue_cutoff <- 0.05
