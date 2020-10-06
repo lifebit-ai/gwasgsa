@@ -200,9 +200,9 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 | `--gene_loc_file` | Gene-SNP mapped Location file (This can be downloaded from MAGMA homepage) |
 | `--set_anot_file` | A SET file (Ex. A .gmt file, check MSigDB) |
 
-### Input 
+### Input
 
-Three type input can be given 
+Three type input can be given
 
 List of VCFs [OR] PLINK output [OR] Summary Statistics file. Check bellow for details.
 
