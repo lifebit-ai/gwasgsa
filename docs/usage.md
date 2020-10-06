@@ -200,13 +200,19 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 | `--gene_loc_file` | Gene-SNP mapped Location file (This can be downloaded from MAGMA homepage) |
 | `--set_anot_file` | A SET file (Ex. A .gmt file, check MSigDB) |
 
-### With VCF files
+### Input 
+
+Three type input can be given 
+
+List of VCFs [OR] PLINK output [OR] Summary Statistics file. Check bellow for details.
+
+#### Input type-1 with VCF files
 
 | param | description |
 |-------|-------------|
-| `--vcf_file` | A list of VCF in a CSV file ((Optional if `--plink_*` OR `--summary_stats` already provided)) |
+| `--vcf_file` | A list of VCF in a CSV file (Optional if `--plink_*` OR `--summary_stats` already provided)) |
 
-### With plink binary files
+#### Input type-1 with plink binary files
 
 | param | description |
 |-------|-------------|
@@ -214,7 +220,7 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 | `--plink_bed` | Plink .bed file (Optional if `--vcf_file` OR `--summary_stats` already provided) |
 | `--plink_fam` | Plink .fam file (Optional if `--vcf_file` OR `--summary_stats` already provided) |
 
-### With Summary Statistics file
+#### Input type-1 with Summary Statistics file
 
 | param | description |
 |-------|-------------|
