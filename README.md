@@ -1,9 +1,9 @@
-# ![nf-core/gwasgsa](docs/images/nf-core-gwasgsa_logo.png)
+# ![lifebit-ai/gwasgsa](docs/images/nf-core-gwasgsa_logo.png)
 
 **Gene-Set-Analysis for GWAS**.
 
-[![GitHub Actions CI Status](https://github.com/nf-core/gwasgsa/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/gwasgsa/actions)
-[![GitHub Actions Linting Status](https://github.com/nf-core/gwasgsa/workflows/nf-core%20linting/badge.svg)](https://github.com/nf-core/gwasgsa/actions)
+[![GitHub Actions CI Status](https://github.com/lifebit-ai/gwasgsa/workflows/nf-core%20CI/badge.svg)](https://github.com/lifebit-ai/gwasgsa/actions)
+[![GitHub Actions Linting Status](https://github.com/lifebit-ai/gwasgsa/workflows/nf-core%20linting/badge.svg)](https://github.com/lifebit-ai/gwasgsa/actions)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
 
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
@@ -22,7 +22,7 @@ ii. Install either [`Docker`](https://docs.docker.com/engine/installation/) or [
 iii. Download the pipeline and test it on a minimal dataset with a single command
 
 ```bash
-nextflow run nf-core/gwasgsa -profile test,<docker/singularity/conda/institute>
+nextflow run lifebit-ai/gwasgsa -profile test,<docker/singularity/conda/institute>
 ```
 
 > Please check [nf-core/configs](https://github.com/nf-core/configs#documentation) to see if a custom config file to run nf-core pipelines already exists for your Institute. If so, you can simply use `-profile <institute>` in your command. This will enable either `docker` or `singularity` and set the appropriate execution settings for your local compute environment.
@@ -33,7 +33,7 @@ iv. Start running your own analysis!
 
 ```bash
 
-nextflow run nf-core/gwasgsa \
+nextflow run lifebit-ai/gwasgsa \
     -profile <docker/singularity/conda/institute> \
     --vcf_file s3://lifebit-featured-datasets/projects/gel/gel-gwas/testdata/vcfs.csv \
     --gene_loc_file testdata/NCBI37.3/NCBI37.3.gene.loc \
@@ -45,7 +45,7 @@ See [usage docs](docs/usage.md) for all of the available options when running th
 
 ## Documentation
 
-The nf-core/gwasgsa pipeline comes with documentation about the pipeline, found in the `docs/` directory:
+The lifebit-ai/gwasgsa pipeline comes with documentation about the pipeline, found in the `docs/` directory:
 
 1. [Installation](https://nf-co.re/usage/installation)
 2. Pipeline configuration
@@ -58,11 +58,11 @@ The nf-core/gwasgsa pipeline comes with documentation about the pipeline, found 
 
 ## Overview
 
-This pipeline helps to do generalized gene-set analysis of GWAS data using MAGMA. It can be used to analyse both raw genotype data as well as summary SNP p-values from a previous GWAS or meta-analysis.
+This pipeline helps to do generalised gene-set analysis of GWAS data using MAGMA. It can be used to analyse both raw genotype data (list of vcf or PLINK output) as well as summary SNP p-values from a previous GWAS or meta-analysis.
 
 ## Credits
 
-nf-core/gwasgsa was originally written by Sangram Keshari Sahu.
+lifebit-ai/gwasgsa was originally written by Sangram Keshari Sahu.
 
 ## Contributions and Support
 
@@ -73,7 +73,7 @@ For further information or help, don't hesitate to get in touch on [Slack](https
 ## Citation
 
 <!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
-<!-- If you use  nf-core/gwasgsa for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+<!-- If you use  lifebit-ai/gwasgsa for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
 
 You can cite the `nf-core` publication as follows:
 
