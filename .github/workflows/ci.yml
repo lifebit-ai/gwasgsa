@@ -25,4 +25,4 @@ jobs:
           #docker tag lifebitai/gwasgsa:dev lifebitai/gwasgsa:dev
       - name: Run pipeline with test data
         run: |
-          nextflow run ${GITHUB_WORKSPACE} -profile test_with_plink,docker
+          nextflow run main.nf -profile test_with_plink,docker
