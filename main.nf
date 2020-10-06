@@ -559,7 +559,6 @@ process magma_gene_property_analysis {
 
 process results_plots {
     publishDir "${params.outdir}/magma", mode: 'copy'
-    container 'rocker/tidyverse:latest'
     
     input:
     file(geneset) from geneset_ch

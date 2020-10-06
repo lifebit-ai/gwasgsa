@@ -86,7 +86,7 @@ OR
 
 ```bash
 nextflow run main.nf \
-    --vcf_file s3://lifebit-featured-datasets/projects/gel/gel-gwas/testdata/vcfs.csv \
+    --vcf_file testdata/vcfs.csv \
     --gene_loc_file testdata/NCBI37.3/NCBI37.3.gene.loc \
     --set_anot_file testdata/c2.cp.reactome.v7.1.entrez.gmt \
     --outdir results_test_vcf

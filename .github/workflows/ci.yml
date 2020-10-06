@@ -22,9 +22,7 @@ jobs:
       - name: Pull docker image
         run: |
           docker pull lifebitai/gwasgsa:dev
-          docker tag lifebitai/gwasgsa:dev lifebitai/gwasgsa:dev
+          #docker tag lifebitai/gwasgsa:dev lifebitai/gwasgsa:dev
       - name: Run pipeline with test data
         run: |
-          # TODO nf-core: You can customise CI pipeline run tests as required
-          # (eg. adding multiple test runs with different parameters)
           nextflow run ${GITHUB_WORKSPACE} -profile test_with_plink,docker
