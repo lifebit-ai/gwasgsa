@@ -225,27 +225,27 @@ Channel.from(summary.collect{ [it.key, it.value] })
 /*
  * Parse software version numbers
  */
-process get_software_versions {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy',
-        saveAs: { filename ->
-                      if (filename.indexOf(".csv") > 0) filename
-                      else null
-                }
+// process get_software_versions {
+//     publishDir "${params.outdir}/pipeline_info", mode: 'copy',
+//         saveAs: { filename ->
+//                       if (filename.indexOf(".csv") > 0) filename
+//                       else null
+//                 }
 
-    output:
-    file 'software_versions_mqc.yaml' into ch_software_versions_yaml
-    file "software_versions.csv"
+//     output:
+//     file 'software_versions_mqc.yaml' into ch_software_versions_yaml
+//     file "software_versions.csv"
 
-    script:
-    // TODO nf-core: Get all tools to print their version number here
-    """
-    echo $workflow.manifest.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
-    multiqc --version > v_multiqc.txt
-    scrape_software_versions.py &> software_versions_mqc.yaml
-    """
-}
+//     script:
+//     // TODO nf-core: Get all tools to print their version number here
+//     """
+//     echo $workflow.manifest.version > v_pipeline.txt
+//     echo $workflow.nextflow.version > v_nextflow.txt
+//     fastqc --version > v_fastqc.txt
+//     multiqc --version > v_multiqc.txt
+//     scrape_software_versions.py &> software_versions_mqc.yaml
+//     """
+// }
 
 /*
  * Main process starts here
@@ -420,7 +420,7 @@ process magma_annotation {
     file(snp_subset_file) from snp_subset_ch
 
     output:
-    set file('magma_out.genes.annot') into magma_anot_ch, magma_anot_ch_2
+    file('magma_out.genes.annot') into magma_anot_ch
     file('magma_out.genes.annot.log') into magma_anot_log_ch
 
     script:
@@ -574,25 +574,25 @@ process results_plots {
 
 }
 
-process get_genenames {
-    publishDir "${params.outdir}/magma", mode: 'copy'
+// process get_genenames {
+//     publishDir "${params.outdir}/magma", mode: 'copy'
     
-    input:
-    file(res_sorted) from res_sorted_ch
-    file(res_top) from res_top_ch
-    file(anot) from magma_anot_ch_2
-    file(geneset) from set_anot_ch_2
-    file(geneloc) from gene_loc_file_ch_2
+//     input:
+//     file(res_sorted) from res_sorted_ch
+//     file(res_top) from res_top_ch
+//     file(anot) from magma_anot_ch_2
+//     file(geneset) from set_anot_ch_2
+//     file(geneloc) from gene_loc_file_ch_2
 
-    output:
-    file('*.tsv')
+//     output:
+//     file('*.tsv')
 
-    script:
-    """
-    Rscript $baseDir/bin/gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
-    Rscript $baseDir/bin/gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
-    """
-}
+//     script:
+//     """
+//     Rscript $baseDir/bin/gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
+//     Rscript $baseDir/bin/gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
+//     """
+// }
 
 /*
  * MultiQC
