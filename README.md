@@ -22,7 +22,7 @@ ii. Install either [`Docker`](https://docs.docker.com/engine/installation/) or [
 iii. Download the pipeline and test it on a minimal dataset with a single command
 
 ```bash
-nextflow run lifebit-ai/gwasgsa -profile test,<docker/singularity/conda/institute>
+nextflow run lifebit-ai/gwasgsa -profile test,docker
 ```
 
 > Please check [nf-core/configs](https://github.com/nf-core/configs#documentation) to see if a custom config file to run nf-core pipelines already exists for your Institute. If so, you can simply use `-profile <institute>` in your command. This will enable either `docker` or `singularity` and set the appropriate execution settings for your local compute environment.
@@ -34,7 +34,7 @@ iv. Start running your own analysis!
 ```bash
 
 nextflow run lifebit-ai/gwasgsa \
-    -profile <docker/singularity/conda/institute> \
+    -profile docker \
     --vcf_file s3://lifebit-featured-datasets/projects/gel/gel-gwas/testdata/vcfs.csv \
     --gene_loc_file testdata/NCBI37.3/NCBI37.3.gene.loc \
     --set_anot_file testdata/c2.cp.reactome.v7.1.entrez.gmt \
