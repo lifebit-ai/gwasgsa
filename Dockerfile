@@ -13,8 +13,6 @@ ENV PATH /opt/conda/envs/nf-core-gwasgsa-1.0dev/bin:$PATH
 # Dump the details of the installed packages to a file for posterity
 RUN conda env export --name nf-core-gwasgsa-1.0dev > nf-core-gwasgsa-1.0dev.yml
 
-USER root
-
 # Install MAGMA
 RUN apt-get update \
     && apt-get install procps -y \
