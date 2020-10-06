@@ -1,0 +1,46 @@
+----------------------------------------------------
+                                        ,--./,-.
+        ___     __   __   __   ___     /,-._.--~\
+  |\ | |__  __ /  ` /  \ |__) |__         }  {
+  | \| |       \__, \__/ |  \ |___     \`-._,-`-,
+                                        `._,._,'
+  nf-core/gwasgsa v1.0dev
+----------------------------------------------------
+
+Run Name: crazy_easley
+
+## nf-core/gwasgsa execution completed successfully! ##
+
+
+The workflow was completed at 2020-10-06T10:31:26.169Z (duration: 52.9s)
+
+The command used to launch the workflow was as follows:
+
+  nextflow run main.nf -profile test_with_plink,docker
+
+
+
+Pipeline Configuration:
+-----------------------
+ - Run Name: crazy_easley
+ - Gene-Location file: testdata/NCBI37.3/NCBI37.3.gene.loc
+ - Annotation file: false
+ - Max Resources: 128 GB memory, 16 cpus, 10d time per job
+ - Container: docker - lifebitai/gwasgsa:dev
+ - Output dir: results_test_plink
+ - Launch dir: /home/ec2-user/gwasgsa
+ - Working dir: /home/ec2-user/gwasgsa/work
+ - Script dir: /home/ec2-user/gwasgsa
+ - User: ec2-user
+ - Config Profile: test_with_plink,docker
+ - Date Started: 2020-10-06T10:30:33.300Z
+ - Date Completed: 2020-10-06T10:31:26.169Z
+ - Pipeline script file path: /home/ec2-user/gwasgsa/main.nf
+ - Pipeline script hash ID: 380e2109c2b50db9a5cacd311ede80a7
+ - Nextflow Version: 20.07.1
+ - Nextflow Build: 5412
+ - Nextflow Compile Timestamp: 24-07-2020 15:18 UTC
+
+--
+nf-core/gwasgsa
+https://github.com/nf-core/gwasgsa
