@@ -358,16 +358,17 @@ process process_summary_stats {
     file summary_stats from summary_stats_ch
 
     output:
-    file('snp_p.txt') into snp_p_txt_ch
+    file('snp_p.tsv') into snp_p_txt_ch
 
     when: params.summary_stats
 
     script:
     """
-    csvtk cut -t -f ${params.snp_col_name},${params.pval_col_name} \
+    csvtk cut -f ${params.snp_col_name},${params.pval_col_name} \
         ${summary_stats} > temp_1.txt
     awk '{gsub("${params.snp_col_name}", "SNP", \$0); print}' temp_1.txt > temp_2.txt
     awk '{gsub("${params.pval_col_name}", "P", \$0); print}' temp_2.txt > snp_p.txt
+    csvtk csv2tab snp_p.txt > snp_p.tsv
     """
 }
 
@@ -437,7 +438,7 @@ process magma_annotation {
 
 // optional params for gene analysis
 if (params.summary_stats){
-    pval = "--pval snp_p.txt N=" + params.sample_size
+    pval = "--pval snp_p.tsv N=" + params.sample_size
 } else pval=''
 if(params.seed) seed = "--seed " + params.seed else seed=''
 if(params.snp_max_maf) snp_max_maf = "snp-max-maf=" + params.snp_max_maf else snp_max_maf=''
