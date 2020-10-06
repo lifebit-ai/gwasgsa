@@ -7,7 +7,7 @@
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
 
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
-[![Docker](https://img.shields.io/docker/automated/nfcore/gwasgsa.svg)](https://hub.docker.com/r/nfcore/gwasgsa)
+[![Docker](https://img.shields.io/docker/automated/lifebitai/gwasgsa.svg)](https://hub.docker.com/r/lifebitai/gwasgsa)
 
 ## Introduction
 
@@ -58,7 +58,7 @@ The lifebit-ai/gwasgsa pipeline comes with documentation about the pipeline, fou
 
 ## Overview
 
-This pipeline helps to do generalised gene-set analysis of GWAS data using MAGMA. It can be used to analyse both raw genotype data (list of vcf or PLINK output) as well as summary SNP p-values from a previous GWAS or meta-analysis.
+This pipeline helps to do generalised gene-set analysis of GWAS data using MAGMA. It can be used to analyse both raw genotype data (list of VCFs or PLINK output) as well as Summary-Statistics file (with SNP and p-values) from a previous GWAS or meta-analysis.
 
 ## Credits
 
