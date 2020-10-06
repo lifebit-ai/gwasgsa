@@ -253,8 +253,7 @@ process get_software_versions {
 
 process file_preprocessing {
     publishDir "${params.outdir}/processed_files", mode: 'copy'
-    container 'lifebitai/preprocess_gwas:latest'
-
+    
     input:
     file vcfs from vcfs.collect()
     file vcf_file from vcf_file
@@ -306,8 +305,7 @@ process file_preprocessing {
 // run plink on given vcf files
 process plink {
     publishDir "${params.outdir}/plink", mode: 'copy'
-    container 'alliecreason/plink:1.90'
-
+    
     input:
     file vcf from vcf_plink
     file fam from data
@@ -355,8 +353,7 @@ if (params.summary_stats){
 } else summary_stats_ch = ''
 
 process process_summary_stats {
-    container 'lifebitai/gwasgsa:latest'
-
+    
     input:
     file summary_stats from summary_stats_ch
 
@@ -416,8 +413,7 @@ if (params.snp_subset) {
 
 process magma_annotation {
     publishDir "${params.outdir}/magma", mode: 'copy'
-    container 'lifebitai/gwasgsa:latest'
-
+    
     input:
     set file(bed), file(bim), file(fam) from plink_ch
     file(gene_loc_file) from gene_loc_file_ch
@@ -464,8 +460,7 @@ if(params.summary_stats){
 
 process magma_gene_analysis {
     publishDir "${params.outdir}/magma", mode: 'copy'
-    container 'lifebitai/gwasgsa:latest'
-
+    
     input:
     set file(bed), file(bim), file(fam) from plink_ch_2
     file(magma_anot) from magma_anot_ch
@@ -513,8 +508,7 @@ if(params.alpha) alpha = "alpha=" + params.alpha else alpha=''
 
 process magma_geneset_analysis {
     publishDir "${params.outdir}/magma", mode: 'copy'
-    container 'lifebitai/gwasgsa:latest'
-
+    
     input:
     file(gene_raw) from genes_raw_ch
     file(set_anot) from set_anot_ch
@@ -541,8 +535,7 @@ process magma_geneset_analysis {
 
 process magma_gene_property_analysis {
     publishDir "${params.outdir}/magma", mode: 'copy'
-    container 'lifebitai/gwasgsa:latest'
-
+    
     input:
     file(gene_raw) from genes_raw_ch_2
     file(cov) from cov_ch
@@ -565,8 +558,7 @@ process magma_gene_property_analysis {
 
 process results_plots {
     publishDir "${params.outdir}/magma", mode: 'copy'
-    container 'rocker/tidyverse:latest'
-
+    
     input:
     file(geneset) from geneset_ch
 
@@ -584,8 +576,7 @@ process results_plots {
 
 process get_genenames {
     publishDir "${params.outdir}/magma", mode: 'copy'
-    container 'rocker/tidyverse:latest'
-
+    
     input:
     file(res_sorted) from res_sorted_ch
     file(res_top) from res_top_ch
