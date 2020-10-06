@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # This script generates a dot plot for gene set analysis
 # Input - MAGMA tools .gsa.out file
 # Usage - Rscript dot_plot .gsa.out_file pvalue_cutoff top_n_value 

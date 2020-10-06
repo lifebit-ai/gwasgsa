@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 library(tidyverse)
 
 #res_file <- "results_test_plink_new/magma/magma_out.gsa.out.sorted.csv"

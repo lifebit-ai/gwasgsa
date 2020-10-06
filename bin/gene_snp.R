@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 library(stringr)
 
 magma_annot_log_file <- "results_test_vcf/magma/magma_out.genes.annot.log"
