@@ -256,17 +256,17 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 | param | description |
 |-------|-------------|
 | `--gene_info` | per-gene information [true/false] (Default: false) |
-| `--outlier_up`, `--outlier_down` | Z-core cutoff for detecting outlier (Default: lower-3 upper-6) | 
+| `--outlier_up`, `--outlier_down` | Z-core cutoff for detecting outlier (Default: lower-3 upper-6) |
 | `--direction_sets` | The direction of testing in the model (Default: 'positive') accepted values for all directions ‘pos’/‘positive’/‘greater’, ‘neg’/‘negative’/‘smaller’ and ‘both’/‘two’/‘twosided’/‘two-sided’ |
 | `--self_contained` | perform an additional self-contained gene-set analysis for all gene sets [true/false] (Default: false) |
 | `--alpha` | sets the significance level. Takes numeric value (Default: Not applied) |
-| `--correct` | Control the automatic correction for technical data-level properties [all/none] (Default: all) | 
+| `--correct` | Control the automatic correction for technical data-level properties [all/none] (Default: all) |
 
 ### Gene Property Analysis
 
 | param | description |
 |-------|-------------|
-| `--cov_file` | Provide a covariate file Exception: can't be used with `--summary_stats` | 
+| `--cov_file` | Provide a covariate file Exception: can't be used with `--summary_stats` |
 
 ### Results filtering and Plotting Settings
 
@@ -280,7 +280,7 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 | param | description |
 |-------|-------------|
 | `--outdir` | Output directory name (Default: Results in current directory) |
-| `--help` | Show help menu | 
+| `--help` | Show help menu |
 | `-resume` | Nextflow param, help in resume a run |
 
 ## Output Files
