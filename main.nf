@@ -589,8 +589,8 @@ process get_genenames {
 
     script:
     """
-    Rscript $baseDir/bin/gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
-    Rscript $baseDir/bin/gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
+    Rscript /opt/bin/gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
+    Rscript /opt/bin/gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
     """
 }
 

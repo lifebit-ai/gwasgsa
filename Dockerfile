@@ -15,7 +15,7 @@ RUN conda env export --name nf-core-gwasgsa-1.0dev > nf-core-gwasgsa-1.0dev.yml
 # Install MAGMA
 RUN apt-get update \
     && apt-get install procps -y \
-    && apt-get install wget zip unzip -y \
+    && apt-get install wget zip unzip libxt-dev -y \
     && wget https://ctg.cncr.nl/software/MAGMA/prog/magma_v1.08.zip \
     && unzip magma_v1.08.zip \
     && cp magma /usr/bin/ \
