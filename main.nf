@@ -102,7 +102,8 @@ if (params.vcf_file) {
         .splitCsv(header: true)
         .map{ row -> [file(row.vcf)] }
         .set { vcfs }
-} else {
+}
+if (!params.vcf_file) {
     vcfs = false
     vcf_file = false
 }
@@ -113,61 +114,61 @@ if (!params.gene_loc_file){
     exit 1, "Provide mandatory argument '--gene_loc_file'"
 } else {
     Channel.fromPath(params.gene_loc_file)
-        .into { gene_loc_file_ch; gene_loc_file_ch_2 }
+        .into { ch_gene_loc_file; ch_gene_loc_file_2 }
 }
 
 if (!params.set_anot_file) {
     exit 1, "Provide mandatory argument '--set_anot_file'"
 } else {
     Channel.fromPath(params.set_anot_file)
-        .into { set_anot_ch; set_anot_ch_2 }
+        .into { ch_set_anot; ch_set_anot_2 }
 }
 
 if (params.cov_file) {
     Channel.fromPath(params.cov_file)
-        .set { cov_ch }
-} else cov_ch=''
+        .set { ch_cov }
+} else ch_cov=''
 
 //--------------------------------------------------------------------------
 
 if (params.plink_bed) {
     Channel.fromPath(params.plink_bed)
         .ifEmpty { exit 1, "PLINK binary pedigree file not found: ${params.bed}" }
-        .set { bed_ch }
-} else bed_ch=''
+        .set { ch_bed }
+} else ch_bed=''
 if (params.plink_bim) {
     Channel.fromPath(params.plink_bim)
         .ifEmpty { exit 1, "PLINK BIM file not found: ${params.bim}" }
-        .set { bim_ch }
-} else bim_ch=''
+        .set { ch_bim }
+} else ch_bim=''
 if (params.plink_fam) {
     Channel.fromPath(params.plink_fam)
         .ifEmpty { exit 1, "PLINK FAM file not found: ${params.fam}" }
-        .set { fam_ch }
-} else fam_ch=''
+        .set { ch_fam }
+} else ch_fam=''
 
 //--------------------------------------------------------------------------
 
 if (params.ref_panel_bed) {
     Channel.fromPath(params.ref_panel_bed)
         .ifEmpty { exit 1, "File not found: ${params.ref_panel_bed}" }
-        .set { ref_panel_bed_ch }
-} else ref_panel_bed_ch=''
+        .set { ch_ref_panel_bed }
+} else ch_ref_panel_bed=''
 if (params.ref_panel_bim) {
     Channel.fromPath(params.ref_panel_bim)
         .ifEmpty { exit 1, "File not found: ${params.ref_panel_bim}" }
-        .set { ref_panel_bim_ch }
-} else ref_panel_bim_ch=''
+        .set { ch_ref_panel_bim }
+} else ch_ref_panel_bim=''
 if (params.ref_panel_fam) {
     Channel.fromPath(params.ref_panel_fam)
         .ifEmpty { exit 1, "File not found: ${params.ref_panel_fam}" }
-        .set { ref_panel_fam_ch }
-} else ref_panel_fam_ch=''
+        .set { ch_ref_panel_fam }
+} else ch_ref_panel_fam=''
 if (params.ref_panel_synonyms) {
     Channel.fromPath(params.ref_panel_synonyms)
         .ifEmpty { exit 1, "File not found: ${params.ref_panel_synonyms}" }
-        .set { ref_panel_synonyms_ch }
-} else ref_panel_synonyms_ch = Channel.from(1)
+        .set { ch_ref_panel_synonyms }
+} else ch_ref_panel_synonyms = Channel.from(1)
 
 //--------------------------------------------------------------------------
 
@@ -311,7 +312,7 @@ process plink {
     file fam from data
 
     output:
-    set file('*.bed'), file('*.bim'), file('*.fam') into plink_undirect, plink_undirect_2
+    set file('*.bed'), file('*.bim'), file('*.fam') into ch_plink_undirect, ch_plink_undirect_2
 
     when: params.vcf_file
 
@@ -330,18 +331,18 @@ process plink {
 process preprocess_plink {
 
     input:
-    file bed from bed_ch
-    file bim from bim_ch
-    file fam from fam_ch
+    file bed from ch_bed
+    file bim from ch_bim
+    file fam from ch_fam
 
     output:
-    set file("${bed}"), file("${bim}"), file("${fam}") into plink_direct, plink_direct_2
+    set file("${bed}"), file("${bim}"), file("${fam}") into ch_plink_direct, ch_plink_direct_2
 
     when: params.plink_bed && params.plink_bim && params.plink_fam
 
     script:
     """
-    echo "No Change"
+    echo "No Modifications to files. This step used for staging the files to make a unified nextflow channel for next step."
     """
 }
 
@@ -349,16 +350,16 @@ process preprocess_plink {
 
 if (params.summary_stats){
     Channel.fromPath(params.summary_stats)
-        .set { summary_stats_ch }
-} else summary_stats_ch = ''
+        .set { ch_summary_stats }
+} else ch_summary_stats = ''
 
 process process_summary_stats {
     
     input:
-    file summary_stats from summary_stats_ch
+    file summary_stats from ch_summary_stats
 
     output:
-    file('snp_p.tsv') into snp_p_txt_ch
+    file('snp_p.tsv') into ch_snp_p_txt
 
     when: params.summary_stats
 
@@ -376,55 +377,58 @@ process process_summary_stats {
 process preprocess_ref_panel {
 
     input:
-    file bed from ref_panel_bed_ch
-    file bim from ref_panel_bim_ch
-    file fam from ref_panel_fam_ch
+    file bed from ch_ref_panel_bed
+    file bim from ch_ref_panel_bim
+    file fam from ch_ref_panel_fam
 
     output:
-    set file("${bed}"), file("${bim}"), file("${fam}") into plink_ref_panel, plink_ref_panel_2
+    set file("${bed}"), file("${bim}"), file("${fam}") into ch_plink_ref_panel, ch_plink_ref_panel_2
 
     when: !params.plink_bed && !params.plink_bim && !params.plink_fam && params.ref_panel_bed && params.ref_panel_bim && params.ref_panel_fam
 
     script:
     """
-    echo "No Change"
+    echo "No Modifications to files. This step used for staging the files to make a unified nextflow channel for next step."
     """
 }
 
 // optional params for annotation step
 if (params.plink_bed && params.plink_bim && params.plink_fam){
-    plink_ch = plink_direct
-    plink_ch_2 = plink_direct_2
-} else if(params.ref_panel_bed && params.ref_panel_bim && params.ref_panel_fam){
-    plink_ch = plink_ref_panel
-    plink_ch_2 = plink_ref_panel_2
-} else{
-    plink_ch = plink_undirect
-    plink_ch_2 = plink_undirect_2
+    ch_plink = ch_plink_direct
+    ch_plink_2 = ch_plink_direct_2
 }
-annotate_filter=''
-snp_subset_ch=''
+if(params.ref_panel_bed && params.ref_panel_bim && params.ref_panel_fam){
+    ch_plink = ch_plink_ref_panel
+    ch_plink_2 = ch_plink_ref_panel_2
+} 
+if(!params.plink_bed && !params.plink_bim && !params.plink_fam && !params.ref_panel_bed && !params.ref_panel_bim && !params.ref_panel_fam){
+    ch_plink = ch_plink_undirect
+    ch_plink_2 = ch_plink_undirect_2
+}
 
 if (params.snp_subset) {
     Channel.fromPath(params.snp_subset)
         .ifEmpty { exit 1, "A .bim file not found: ${params.snp_subset}" }
-        .set { snp_subset_ch }
-    annotate_filter='filter=snpsubset.bim'
+        .set { ch_snp_subset }
+}
+if (!params.snp_subset) {
+    ch_snp_subset=''
 }
 
 process magma_annotation {
     publishDir "${params.outdir}/magma", mode: 'copy'
     
     input:
-    set file(bed), file(bim), file(fam) from plink_ch
-    file(gene_loc_file) from gene_loc_file_ch
-    file(snp_subset_file) from snp_subset_ch
+    set file(bed), file(bim), file(fam) from ch_plink
+    file(gene_loc_file) from ch_gene_loc_file
+    file(snp_subset_file) from ch_snp_subset
 
     output:
-    file('magma_out.genes.annot') into (magma_anot_ch, magma_anot_ch_2)
-    file('magma_out.genes.annot.log') into magma_anot_log_ch
+    file('magma_out.genes.annot') into (ch_magma_anot, ch_magma_anot_2)
+    file('magma_out.genes.annot.log') into ch_magma_anot_log
 
     script:
+    if (params.snp_subset) annotate_filter='filter=snpsubset.bim' else annotate_filter=''
     """
     mv $snp_subset_file snpsubset.bim
     magma --annotate \
@@ -436,52 +440,41 @@ process magma_annotation {
     """
 }
 
-// optional params for gene analysis
-if (params.summary_stats){
-    pval = "--pval snp_p.tsv N=" + params.sample_size
-} else pval=''
-if(params.seed) seed = "--seed " + params.seed else seed=''
-if(params.snp_max_maf) snp_max_maf = "snp-max-maf=" + params.snp_max_maf else snp_max_maf=''
-if(params.snp_max_mac) snp_max_mac = "snp-max-mac=" + params.snp_max_mac else snp_max_mac=''
-if(params.burden) burden = "--burden " + params.burden else burden = ''
-if(params.big_data) big_data = "--big-data" + params.big_data else big_data=''
-if(params.gene_model) gene_model = "--gene-model " + params.gene_model else gene_model=''
-
-// exceptions with summary stats file
-if (params.summary_stats){
-    if(params.gene_model == "linreg") println "Workflow Error: '--gene_model linreg' can't be used with summary stats file" exit 0
-}
-
-// create an dummy channel for snp_ch if summary_stats not provided
-if(params.summary_stats){
-    snp_p_ch = snp_p_txt_ch
-} else {
-    snp_p_ch = Channel.from(1)
-}
+// create an dummy channel for ch_snp_p if summary_stats not provided
+if(params.summary_stats) ch_snp_p = ch_snp_p_txt
+if(!params.summary_stats) ch_snp_p = Channel.from(1)
 
 process magma_gene_analysis {
     publishDir "${params.outdir}/magma", mode: 'copy'
     
     input:
-    set file(bed), file(bim), file(fam) from plink_ch_2
-    file(magma_anot) from magma_anot_ch
-    file(snp_p_file) from snp_p_ch
-    file(ref_panel_synonyms) from ref_panel_synonyms_ch
+    set file(bed), file(bim), file(fam) from ch_plink_2
+    file(magma_anot) from ch_magma_anot
+    file(snp_p_file) from ch_snp_p
+    file(ref_panel_synonyms) from ch_ref_panel_synonyms
 
     output:
-    file('magma_out.genes.raw') into genes_raw_ch
-    file('magma_out.genes.raw') into genes_raw_ch_2
-    file('magma_out.genes.out') into genes_out_ch
-    file('magma_out.genes.out.log') into  genes_out_log_ch
+    file('magma_out.genes.raw') into ch_genes_raw
+    file('magma_out.genes.raw') into ch_genes_raw_2
+    file('magma_out.genes.out') into ch_genes_out
+    file('magma_out.genes.out.log') into  ch_genes_out_log
 
     script:
+    // optional params for gene analysis
+    if (params.summary_stats) pval = "--pval snp_p.tsv N=" + params.sample_size else pval=''
+    if(params.seed) seed = "--seed " + params.seed else seed=''
+    if(params.snp_max_maf) snp_max_maf = "snp-max-maf=" + params.snp_max_maf else snp_max_maf=''
+    if(params.snp_max_mac) snp_max_mac = "snp-max-mac=" + params.snp_max_mac else snp_max_mac=''
+    if(params.burden) burden = "--burden " + params.burden else burden = ''
+    if(params.big_data) big_data = "--big-data" + params.big_data else big_data=''
+    if(params.gene_model) gene_model = "--gene-model " + params.gene_model else gene_model=''
+    // exceptions with summary stats file
+    if (params.summary_stats && params.gene_model == "linreg") println "Workflow Error: '--gene_model linreg' can't be used with summary stats file" exit 0
     """
     # change the names. It should be equal for all (for the purpose of upload timestamp)
     mv ${bed} plink_file.bed
     mv ${bim} plink_file.bim
     mv ${fam} plink_file.fam
-
-    #magma --bfile ${bed.baseName}
 
     magma --bfile plink_file \
         ${pval} \
@@ -502,24 +495,23 @@ process magma_gene_analysis {
     """
 }
 
-// additional geneset settings (optional)
-if(params.gene_info) gene_info = "gene-info" else gene_info = ''
-if(params.self_contained) self_contained = "self-contained" else self_contained = ''
-if(params.alpha) alpha = "alpha=" + params.alpha else alpha=''
-
 process magma_geneset_analysis {
     publishDir "${params.outdir}/magma", mode: 'copy'
     
     input:
-    file(gene_raw) from genes_raw_ch
-    file(set_anot) from set_anot_ch
+    file(gene_raw) from ch_genes_raw
+    file(set_anot) from ch_set_anot
 
     output:
-    file('magma_out.gsa.out') into geneset_ch
+    file('magma_out.gsa.out') into ch_geneset
     file('*.out') // for gsa.genes.out and .gsa.self.out
-    file('magma_out.gsa.out.log') into geneset_log_ch
+    file('magma_out.gsa.out.log') into ch_geneset_log
 
     script:
+    // additional geneset settings (optional)
+    if(params.gene_info) gene_info = "gene-info" else gene_info = ''
+    if(params.self_contained) self_contained = "self-contained" else self_contained = ''
+    if(params.alpha) alpha = "alpha=" + params.alpha else alpha=''
     """
     magma --gene-results ${gene_raw} \
         --settings outlier=${params.outlier_up},${params.outlier_down} \
@@ -538,12 +530,12 @@ process magma_gene_property_analysis {
     publishDir "${params.outdir}/magma", mode: 'copy'
     
     input:
-    file(gene_raw) from genes_raw_ch_2
-    file(cov) from cov_ch
+    file(gene_raw) from ch_genes_raw_2
+    file(cov) from ch_cov
 
     output:
-    file('magma_out.gsa.out.cov') into genecov_ch
-    file('magma_out.gsa.out.cov.log') into genecov_log_ch
+    file('magma_out.gsa.out.cov') into ch_genecov
+    file('magma_out.gsa.out.cov.log') into ch_genecov_log
 
     when: params.cov_file
 
@@ -561,16 +553,16 @@ process results_plots {
     publishDir "${params.outdir}/magma", mode: 'copy'
     
     input:
-    file(geneset) from geneset_ch
+    file(geneset) from ch_geneset
 
     output:
     file('*.png')
-    file('*.sorted.csv') into res_sorted_ch
-    file('*.plot.csv') into res_top_ch
+    file('*.sorted.csv') into ch_res_sorted
+    file('*.plot.csv') into ch_res_top
 
     script:
     """
-    Rscript /opt/bin/dot_plot.R ${geneset} ${params.pvalue_cutoff} ${params.top_n_value}
+    dot_plot.R ${geneset} ${params.pvalue_cutoff} ${params.top_n_value}
     """
 }
 
@@ -578,19 +570,19 @@ process get_genenames {
     publishDir "${params.outdir}/magma", mode: 'copy'
     
     input:
-    file(res_sorted) from res_sorted_ch
-    file(res_top) from res_top_ch
-    file(anot) from magma_anot_ch_2
-    file(geneset) from set_anot_ch_2
-    file(geneloc) from gene_loc_file_ch_2
+    file(res_sorted) from ch_res_sorted
+    file(res_top) from ch_res_top
+    file(anot) from ch_magma_anot_2
+    file(geneset) from ch_set_anot_2
+    file(geneloc) from ch_gene_loc_file_2
 
     output:
     file('*.tsv')
 
     script:
     """
-    Rscript /opt/bin/gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
-    Rscript /opt/bin/gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
+    gene_map.R ${res_sorted} ${anot} ${geneset} ${geneloc}
+    gene_map.R ${res_top} ${anot} ${geneset} ${geneloc}
     """
 }
 
