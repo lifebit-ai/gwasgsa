@@ -430,7 +430,7 @@ process magma_annotation {
 
     output:
     file('magma_out.genes.annot') into (ch_magma_anot, ch_magma_anot_2)
-    file('magma_out.genes.annot.log') into ch_magma_anot_log
+    file('magma_out.genes.annot.log')
 
     script:
     if (params.snp_subset) annotate_filter='filter=snpsubset.bim' else annotate_filter=''
@@ -459,10 +459,9 @@ process magma_gene_analysis {
     file(ref_panel_synonyms) from ch_ref_panel_synonyms
 
     output:
-    file('magma_out.genes.raw') into ch_genes_raw
-    file('magma_out.genes.raw') into ch_genes_raw_2
-    file('magma_out.genes.out') into ch_genes_out
-    file('magma_out.genes.out.log') into  ch_genes_out_log
+    file('magma_out.genes.raw') into (ch_genes_raw, ch_genes_raw_2)
+    file('magma_out.genes.out')
+    file('magma_out.genes.out.log')
 
     script:
     // optional params for gene analysis
@@ -510,7 +509,7 @@ process magma_geneset_analysis {
     output:
     file('magma_out.gsa.out') into ch_geneset
     file('*.out') // for gsa.genes.out and .gsa.self.out
-    file('magma_out.gsa.out.log') into ch_geneset_log
+    file('magma_out.gsa.out.log')
 
     script:
     // additional geneset settings (optional)
@@ -539,8 +538,8 @@ if (params.cov_file){
         file(cov) from ch_cov
 
         output:
-        file('magma_out.gsa.out.cov') into ch_genecov
-        file('magma_out.gsa.out.cov.log') into ch_genecov_log
+        file('magma_out.gsa.out.cov')
+        file('magma_out.gsa.out.cov.log')
 
         script:
         """
