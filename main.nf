@@ -112,14 +112,16 @@ if (!params.vcf_file) {
 
 if (!params.gene_loc_file){
     exit 1, "Provide mandatory argument '--gene_loc_file'"
-} else {
+} 
+if (params.gene_loc_file){
     Channel.fromPath(params.gene_loc_file)
         .into { ch_gene_loc_file; ch_gene_loc_file_2 }
 }
 
 if (!params.set_anot_file) {
     exit 1, "Provide mandatory argument '--set_anot_file'"
-} else {
+} 
+if (params.set_anot_file) {
     Channel.fromPath(params.set_anot_file)
         .into { ch_set_anot; ch_set_anot_2 }
 }
@@ -127,7 +129,7 @@ if (!params.set_anot_file) {
 if (params.cov_file) {
     Channel.fromPath(params.cov_file)
         .set { ch_cov }
-} else ch_cov=''
+}
 
 //--------------------------------------------------------------------------
 
@@ -135,17 +137,17 @@ if (params.plink_bed) {
     Channel.fromPath(params.plink_bed)
         .ifEmpty { exit 1, "PLINK binary pedigree file not found: ${params.bed}" }
         .set { ch_bed }
-} else ch_bed=''
+}
 if (params.plink_bim) {
     Channel.fromPath(params.plink_bim)
         .ifEmpty { exit 1, "PLINK BIM file not found: ${params.bim}" }
         .set { ch_bim }
-} else ch_bim=''
+}
 if (params.plink_fam) {
     Channel.fromPath(params.plink_fam)
         .ifEmpty { exit 1, "PLINK FAM file not found: ${params.fam}" }
         .set { ch_fam }
-} else ch_fam=''
+}
 
 //--------------------------------------------------------------------------
 
@@ -153,22 +155,25 @@ if (params.ref_panel_bed) {
     Channel.fromPath(params.ref_panel_bed)
         .ifEmpty { exit 1, "File not found: ${params.ref_panel_bed}" }
         .set { ch_ref_panel_bed }
-} else ch_ref_panel_bed=''
+}
 if (params.ref_panel_bim) {
     Channel.fromPath(params.ref_panel_bim)
         .ifEmpty { exit 1, "File not found: ${params.ref_panel_bim}" }
         .set { ch_ref_panel_bim }
-} else ch_ref_panel_bim=''
+}
 if (params.ref_panel_fam) {
     Channel.fromPath(params.ref_panel_fam)
         .ifEmpty { exit 1, "File not found: ${params.ref_panel_fam}" }
         .set { ch_ref_panel_fam }
-} else ch_ref_panel_fam=''
+}
 if (params.ref_panel_synonyms) {
     Channel.fromPath(params.ref_panel_synonyms)
         .ifEmpty { exit 1, "File not found: ${params.ref_panel_synonyms}" }
         .set { ch_ref_panel_synonyms }
-} else ch_ref_panel_synonyms = Channel.from(1)
+}
+if (!params.ref_panel_synonyms) {
+    ch_ref_panel_synonyms=''
+}
 
 //--------------------------------------------------------------------------
 
@@ -252,147 +257,154 @@ Channel.from(summary.collect{ [it.key, it.value] })
  * Main process starts here
  */
 
-process file_preprocessing {
-    publishDir "${params.outdir}/processed_files", mode: 'copy'
-    
-    input:
-    file vcfs from vcfs.collect()
-    file vcf_file from vcf_file
-
-    output:
-    file 'merged.vcf' into vcf_plink
-    file 'sample.phe' into data
-
-    when: params.vcf_file
-
-    script:
-    """
-    # iterate through urls in csv replacing s3 path with the local one
-    urls="\$(tail -n+2 $vcf_file | awk -F',' '{print \$2}')"
-    for url in \$(echo \$urls); do
-        vcf="\${url##*/}"
-        sed -i -e "s~\$url~\$vcf~g" $vcf_file
-    done
-    # bgzip uncompressed vcfs
-    for vcf in \$(tail -n+2 $vcf_file | awk -F',' '{print \$2}'); do
-        if [ \${vcf: -4} == ".vcf" ]; then
-                bgzip -c \$vcf > \${vcf}.gz
-                sed -i "s/\$vcf/\${vcf}.gz/g" $vcf_file 
-        fi
-    done
-    # remove any prexisting columns for sex 
-    if grep -Fq "SEX" $vcf_file; then
-        awk -F, -v OFS=, 'NR==1{for (i=1;i<=NF;i++)if (\$i=="SEX"){n=i-1;m=NF-(i==NF)}} {for(i=1;i<=NF;i+=1+(i==n))printf "%s%s",\$i,i==m?ORS:OFS}' $vcf_file > tmp.csv && mv tmp.csv $vcf_file
-    fi
-    # determine sex of each individual from VCF file & add to csv file
-    echo 'SEX' > sex.txt
-    for vcf in \$(tail -n+2 $vcf_file | awk -F',' '{print \$2}'); do
-        bcftools index -f \$vcf
-        SEX="\$(bcftools plugin vcf2sex \$vcf)"
-        if [[ \$SEX == *M ]]; then
-                echo "1" >> sex.txt
-        elif [ \$SEX == *F ]]; then
-                echo "2" >> sex.txt
-        fi
-    done
-    # make fam file & merge vcfs
-    paste -d, sex.txt $vcf_file > tmp.csv && mv tmp.csv $vcf_file
-    make_fam2.py $vcf_file
-    vcfs=\$(tail -n+2 $vcf_file | awk -F',' '{print \$3}')
-    bcftools merge --force-samples \$vcfs > merged.vcf
-    """
-}
-
-// run plink on given vcf files
-process plink {
-    publishDir "${params.outdir}/plink", mode: 'copy'
-    
-    input:
-    file vcf from vcf_plink
-    file fam from data
-
-    output:
-    set file('*.bed'), file('*.bim'), file('*.fam') into ch_plink_undirect, ch_plink_undirect_2
-
-    when: params.vcf_file
-
-    script:
-    """
-    sed '1d' $fam > tmpfile; mv tmpfile $fam
-    # remove contigs eg GL000229.1 to prevent errors
-    sed -i '/^GL/ d' $vcf
-    plink --vcf $vcf --make-bed
-    rm plink.fam
-    mv $fam plink.fam
-    """
-}
-
 // this process is just for meaintain a proper channel by diverting reference panel to plink
-process preprocess_plink {
+if (params.plink_bed && params.plink_bim && params.plink_fam){
+    process preprocess_plink {
 
-    input:
-    file bed from ch_bed
-    file bim from ch_bim
-    file fam from ch_fam
+        input:
+        file bed from ch_bed
+        file bim from ch_bim
+        file fam from ch_fam
 
-    output:
-    set file("${bed}"), file("${bim}"), file("${fam}") into ch_plink_direct, ch_plink_direct_2
+        output:
+        set file("${bed}"), file("${bim}"), file("${fam}") into ch_plink_direct, ch_plink_direct_2
 
-    when: params.plink_bed && params.plink_bim && params.plink_fam
-
-    script:
-    """
-    echo "No Modifications to files. This step used for staging the files to make a unified nextflow channel for next step."
-    """
-}
-
-// this is only incase of summary stats file provided
-
-if (params.summary_stats){
-    Channel.fromPath(params.summary_stats)
-        .set { ch_summary_stats }
-} else ch_summary_stats = ''
-
-process process_summary_stats {
-    
-    input:
-    file summary_stats from ch_summary_stats
-
-    output:
-    file('snp_p.tsv') into ch_snp_p_txt
-
-    when: params.summary_stats
-
-    script:
-    """
-    csvtk cut -f ${params.snp_col_name},${params.pval_col_name} \
-        ${summary_stats} > temp_1.txt
-    awk '{gsub("${params.snp_col_name}", "SNP", \$0); print}' temp_1.txt > temp_2.txt
-    awk '{gsub("${params.pval_col_name}", "P", \$0); print}' temp_2.txt > snp_p.txt
-    csvtk csv2tab snp_p.txt > snp_p.tsv
-    """
+        script:
+        """
+        echo "No Modifications to files. This step used for staging the files to make a unified nextflow channel for next step."
+        """
+    }
 }
 
 // this process is just for meaintain a proper channel by diverting reference panel to plink 
-process preprocess_ref_panel {
+if (!params.plink_bed && !params.plink_bim && !params.plink_fam && params.ref_panel_bed && params.ref_panel_bim && params.ref_panel_fam){
+    process preprocess_ref_panel {
 
-    input:
-    file bed from ch_ref_panel_bed
-    file bim from ch_ref_panel_bim
-    file fam from ch_ref_panel_fam
+        input:
+        file bed from ch_ref_panel_bed
+        file bim from ch_ref_panel_bim
+        file fam from ch_ref_panel_fam
 
-    output:
-    set file("${bed}"), file("${bim}"), file("${fam}") into ch_plink_ref_panel, ch_plink_ref_panel_2
+        output:
+        set file("${bed}"), file("${bim}"), file("${fam}") into ch_plink_ref_panel, ch_plink_ref_panel_2
 
-    when: !params.plink_bed && !params.plink_bim && !params.plink_fam && params.ref_panel_bed && params.ref_panel_bim && params.ref_panel_fam
-
-    script:
-    """
-    echo "No Modifications to files. This step used for staging the files to make a unified nextflow channel for next step."
-    """
+        script:
+        """
+        echo "No Modifications to files. This step used for staging the files to make a unified nextflow channel for next step."
+        """
+    }
 }
 
-// optional params for annotation step
+// this is only incase of summary stats file provided
+if (params.summary_stats){
+    Channel.fromPath(params.summary_stats)
+        .set { ch_summary_stats }
+}
+
+if(params.summary_stats){
+    process preprocess_summary_stats {
+    
+        input:
+        file summary_stats from ch_summary_stats
+
+        output:
+        file('snp_p.tsv') into ch_snp_p_txt
+
+        script:
+        """
+        csvtk cut -f ${params.snp_col_name},${params.pval_col_name} \
+            ${summary_stats} > temp_1.txt
+        awk '{gsub("${params.snp_col_name}", "SNP", \$0); print}' temp_1.txt > temp_2.txt
+        awk '{gsub("${params.pval_col_name}", "P", \$0); print}' temp_2.txt > snp_p.txt
+        csvtk csv2tab snp_p.txt > snp_p.tsv
+        """
+    }
+}
+
+// if a subset file is provided
+if (params.snp_subset) {
+    Channel.fromPath(params.snp_subset)
+        .ifEmpty { exit 1, "A .bim file not found: ${params.snp_subset}" }
+        .set { ch_snp_subset }
+}
+if (!params.snp_subset) {
+    ch_snp_subset = ''
+}
+
+if(params.vcf_file){
+    process preprocessing_vcf {
+        publishDir "${params.outdir}/processed_files", mode: 'copy'
+        
+        input:
+        file vcfs from vcfs.collect()
+        file vcf_file from vcf_file
+
+        output:
+        file 'merged.vcf' into vcf_plink
+        file 'sample.phe' into data
+
+        script:
+        """
+        # iterate through urls in csv replacing s3 path with the local one
+        urls="\$(tail -n+2 $vcf_file | awk -F',' '{print \$2}')"
+        for url in \$(echo \$urls); do
+            vcf="\${url##*/}"
+            sed -i -e "s~\$url~\$vcf~g" $vcf_file
+        done
+        # bgzip uncompressed vcfs
+        for vcf in \$(tail -n+2 $vcf_file | awk -F',' '{print \$2}'); do
+            if [ \${vcf: -4} == ".vcf" ]; then
+                    bgzip -c \$vcf > \${vcf}.gz
+                    sed -i "s/\$vcf/\${vcf}.gz/g" $vcf_file 
+            fi
+        done
+        # remove any prexisting columns for sex 
+        if grep -Fq "SEX" $vcf_file; then
+            awk -F, -v OFS=, 'NR==1{for (i=1;i<=NF;i++)if (\$i=="SEX"){n=i-1;m=NF-(i==NF)}} {for(i=1;i<=NF;i+=1+(i==n))printf "%s%s",\$i,i==m?ORS:OFS}' $vcf_file > tmp.csv && mv tmp.csv $vcf_file
+        fi
+        # determine sex of each individual from VCF file & add to csv file
+        echo 'SEX' > sex.txt
+        for vcf in \$(tail -n+2 $vcf_file | awk -F',' '{print \$2}'); do
+            bcftools index -f \$vcf
+            SEX="\$(bcftools plugin vcf2sex \$vcf)"
+            if [[ \$SEX == *M ]]; then
+                    echo "1" >> sex.txt
+            elif [ \$SEX == *F ]]; then
+                    echo "2" >> sex.txt
+            fi
+        done
+        # make fam file & merge vcfs
+        paste -d, sex.txt $vcf_file > tmp.csv && mv tmp.csv $vcf_file
+        make_fam2.py $vcf_file
+        vcfs=\$(tail -n+2 $vcf_file | awk -F',' '{print \$3}')
+        bcftools merge --force-samples \$vcfs > merged.vcf
+        """
+    }
+
+    // run plink on given vcf files
+    process plink {
+        publishDir "${params.outdir}/plink", mode: 'copy'
+        
+        input:
+        file vcf from vcf_plink
+        file fam from data
+
+        output:
+        set file('*.bed'), file('*.bim'), file('*.fam') into ch_plink_undirect, ch_plink_undirect_2
+
+        script:
+        """
+        sed '1d' $fam > tmpfile; mv tmpfile $fam
+        # remove contigs eg GL000229.1 to prevent errors
+        sed -i '/^GL/ d' $vcf
+        plink --vcf $vcf --make-bed
+        rm plink.fam
+        mv $fam plink.fam
+        """
+    }
+}
+
+// decide the proper channel
 if (params.plink_bed && params.plink_bim && params.plink_fam){
     ch_plink = ch_plink_direct
     ch_plink_2 = ch_plink_direct_2
@@ -401,19 +413,12 @@ if(params.ref_panel_bed && params.ref_panel_bim && params.ref_panel_fam){
     ch_plink = ch_plink_ref_panel
     ch_plink_2 = ch_plink_ref_panel_2
 } 
-if(!params.plink_bed && !params.plink_bim && !params.plink_fam && !params.ref_panel_bed && !params.ref_panel_bim && !params.ref_panel_fam){
+if(params.vcf_file){
     ch_plink = ch_plink_undirect
     ch_plink_2 = ch_plink_undirect_2
 }
 
-if (params.snp_subset) {
-    Channel.fromPath(params.snp_subset)
-        .ifEmpty { exit 1, "A .bim file not found: ${params.snp_subset}" }
-        .set { ch_snp_subset }
-}
-if (!params.snp_subset) {
-    ch_snp_subset=''
-}
+// MAGMA stats here
 
 process magma_annotation {
     publishDir "${params.outdir}/magma", mode: 'copy'
@@ -442,7 +447,7 @@ process magma_annotation {
 
 // create an dummy channel for ch_snp_p if summary_stats not provided
 if(params.summary_stats) ch_snp_p = ch_snp_p_txt
-if(!params.summary_stats) ch_snp_p = Channel.from(1)
+if(!params.summary_stats) ch_snp_p = ''
 
 process magma_gene_analysis {
     publishDir "${params.outdir}/magma", mode: 'copy'
@@ -525,28 +530,27 @@ process magma_geneset_analysis {
     """
 }
 
+if (params.cov_file){
+    process magma_gene_property_analysis {
+        publishDir "${params.outdir}/magma", mode: 'copy'
+        
+        input:
+        file(gene_raw) from ch_genes_raw_2
+        file(cov) from ch_cov
 
-process magma_gene_property_analysis {
-    publishDir "${params.outdir}/magma", mode: 'copy'
-    
-    input:
-    file(gene_raw) from ch_genes_raw_2
-    file(cov) from ch_cov
+        output:
+        file('magma_out.gsa.out.cov') into ch_genecov
+        file('magma_out.gsa.out.cov.log') into ch_genecov_log
 
-    output:
-    file('magma_out.gsa.out.cov') into ch_genecov
-    file('magma_out.gsa.out.cov.log') into ch_genecov_log
-
-    when: params.cov_file
-
-    script:
-    """
-    magma --gene-results ${gene_raw} \
-        --gene-covar ${cov} \
-        --out magma_out
-    mv magma_out.gsa.out magma_out.gsa.out.cov
-    mv magma_out.log magma_out.gsa.out.cov.log
-    """
+        script:
+        """
+        magma --gene-results ${gene_raw} \
+            --gene-covar ${cov} \
+            --out magma_out
+        mv magma_out.gsa.out magma_out.gsa.out.cov
+        mv magma_out.log magma_out.gsa.out.cov.log
+        """
+    }
 }
 
 process results_plots {
