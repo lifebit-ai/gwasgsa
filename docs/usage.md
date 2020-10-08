@@ -78,6 +78,8 @@ The typical command for running the pipeline is as follows:
 
 ### With VCF files
 
+Note: If a VCF csv file is being used as input, then any pre-existing column `SEX` will be ignored and `bcftools plugin vcf2sex` will be used to determine the sex of a VCF file.
+
 ```bash
 nextflow run main.nf -profile test_with_vcf
 ```
